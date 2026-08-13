@@ -21,12 +21,30 @@ commands:
     description: Stop ignoring a player
     usage: /unignore <player>
   channel:
-    description: Switch between local, donator, and staff chat
-    usage: /channel <local|donator|staff>
+    description: Switch between available chat channels
+    usage: /channel <channel>
     aliases: [ch]
+  staffchat:
+    description: Toggle staff chat
+    aliases: [sc]
+  donatorchat:
+    description: Toggle donator chat
+    aliases: [dc]
+  adminchat:
+    description: Toggle admin chat
+    aliases: [ac]
+  highrankchat:
+    description: Toggle high-rank chat
+    aliases: [hc]
+  chat:
+    description: Mute or unmute global chat
+    usage: /chat <mute|unmute> [player]
+  globalchat:
+    description: Mute or unmute global chat
+    usage: /globalchat <mute|unmute> [player]
   chatmute:
-    description: Mute a player's chat
-    usage: /chatmute <player> [duration]
+    description: Legacy chat mute command
+    usage: /chatmute <player>
   thunderchat:
     description: Reload config / admin subcommands
     usage: /thunderchat <reload>
@@ -42,12 +60,39 @@ permissions:
   thunderchat.ignore:
     description: Allows using the ignore system
     default: true
+  thunderchat.channel.global:
+    description: Access to global chat
+    default: false
   thunderchat.channel.staff:
     description: Access to the network-wide staff channel
     default: op
   thunderchat.channel.donator:
     description: Access to the network-wide donator channel
     default: false
+  thunderchat.channel.admin:
+    description: Access to the network-wide admin channel
+    default: op
+  thunderchat.channel.highrank:
+    description: Access to the network-wide high-rank channel
+    default: false
+  thunderchat.bypass.mute:
+    description: Bypass all ThunderChat mutes
+    default: op
+  thunderchat.bypass.mute.global:
+    description: Bypass global chat mutes
+    default: op
+  thunderchat.bypass.mute.staff:
+    description: Bypass staff chat mutes
+    default: op
+  thunderchat.bypass.mute.donator:
+    description: Bypass donator chat mutes
+    default: op
+  thunderchat.bypass.mute.admin:
+    description: Bypass admin chat mutes
+    default: op
+  thunderchat.bypass.mute.highrank:
+    description: Bypass high-rank chat mutes
+    default: op
   thunderchat.bypass.filter:
     description: Bypass spam/caps/word filter
     default: op
