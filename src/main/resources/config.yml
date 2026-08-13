@@ -1,29 +1,26 @@
 # ThunderChat configuration
-
 format:
-  # Normal gamemode chat never leaves the current backend server.
   normal: "{prefix}{player}&7: &f{message}"
-  # Global channels are network-wide and include the gamemode/server name.
-  global: "&7[{server}] {prefix}{player}&7: &f{message}"
-  # Add a PlaceholderAPI placeholder here later, e.g. "%luckperms_prefix% ".
+  global: "&7[{channel}] [{server}] {prefix}{player}&7: &f{message}"
   prefix-placeholder: ""
-
 network:
   enabled: true
-  # Set this differently on every backend server: skymine, bedwars, survival, etc.
   server-name: "skymine"
-
 channels:
   default: local
+  global:
+    permission: thunderchat.channel.global
   donator:
     permission: thunderchat.channel.donator
   staff:
     permission: thunderchat.channel.staff
-
+  admin:
+    permission: thunderchat.channel.admin
+  highrank:
+    permission: thunderchat.channel.highrank
 private-messages:
   enabled: true
   log-to-console: false
-
 filter:
   enabled: true
   spam:
@@ -35,11 +32,9 @@ filter:
   words:
     enabled: true
     blocked: []
-
 mentions:
   enabled: true
   sound: ENTITY_EXPERIENCE_ORB_PICKUP
   highlight-color: "&e"
-
 storage:
   type: yaml
