@@ -45,7 +45,8 @@ public class FilterManager {
 
         if (player.hasPermission("thunderchat.bypass.filter")
                 || player.hasPermission("thunderchat.bypass.spam")) {
-            recordMessage(player.getUniqueId(), message, false);
+            lastMessage.put(player.getUniqueId(), message);
+            lastMessageTime.put(player.getUniqueId(), System.currentTimeMillis());
             return false;
         }
 
@@ -64,7 +65,8 @@ public class FilterManager {
             return true;
         }
 
-        recordMessage(player.getUniqueId(), message, true);
+        lastMessage.put(player.getUniqueId(), message);
+        lastMessageTime.put(player.getUniqueId(), System.currentTimeMillis());
         return false;
     }
 
