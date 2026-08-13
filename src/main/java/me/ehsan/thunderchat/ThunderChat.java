@@ -8,6 +8,7 @@ import me.ehsan.thunderchat.commands.ChannelCommand;
 import me.ehsan.thunderchat.commands.ThunderChatCommand;
 import me.ehsan.thunderchat.commands.ChatMuteCommand;
 import me.ehsan.thunderchat.filter.FilterManager;
+import me.ehsan.thunderchat.messaging.PrivateMessageManager;
 import me.ehsan.thunderchat.listeners.ChatListener;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -19,6 +20,7 @@ public final class ThunderChat extends JavaPlugin {
 
     private ChannelManager channelManager;
     private FilterManager filterManager;
+    private PrivateMessageManager messageManager;
     private FileConfiguration config;
 
     @Override
@@ -30,6 +32,7 @@ public final class ThunderChat extends JavaPlugin {
         // Managers
         this.channelManager = new ChannelManager(this);
         this.filterManager = new FilterManager(this);
+        this.messageManager = new PrivateMessageManager(this);
 
         // Listeners
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
@@ -84,6 +87,10 @@ public final class ThunderChat extends JavaPlugin {
 
     public FilterManager getFilterManager() {
         return filterManager;
+    }
+
+    public PrivateMessageManager getMessageManager() {
+        return messageManager;
     }
 
     public FileConfiguration getPluginConfig() {
