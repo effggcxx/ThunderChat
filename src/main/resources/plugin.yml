@@ -42,9 +42,6 @@ commands:
   globalchat:
     description: Mute or unmute global chat
     usage: /globalchat <mute|unmute> [player]
-  chatmute:
-    description: Legacy chat mute command
-    usage: /chatmute <player>
   channelmutelist:
     description: List globally muted channels and muted players per channel
     usage: /channelmutelist [page]
@@ -102,7 +99,7 @@ permissions:
     default: op
   thunderchat.bypass.spam:
     description: Bypass spam filter only
-    default: op  
+    default: op
   thunderchat.channelmutelist:
     description: View the list of globally muted channels and muted players
     default: op
