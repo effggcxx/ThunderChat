@@ -1,8 +1,15 @@
 # ThunderChat configuration
+#
+# Chat prefixes:
+#   prefix-placeholder accepts any PlaceholderAPI placeholder.
+#   Example for LuckPerms: "%luckperms_prefix% "
+#   You can combine placeholders and normal text, for example:
+#   "&8[&b%luckperms_prefix%&8] "
+#   The resolved value is available in chat formats through {prefix}.
 format:
   normal: "{prefix}{player}&7: &f{message}"
   global: "&7[{channel}] [{server}] {prefix}{player}&7: &f{message}"
-  prefix-placeholder: ""
+  prefix-placeholder: "%luckperms_prefix% "
 network:
   enabled: true
   server-name: "skymine"
