@@ -178,8 +178,11 @@ public class ChannelManager implements PluginMessageListener {
     }
 
     private String resolvePrefix(Player player) {
-        String placeholder = plugin.getPluginConfig().getString("format.prefix-placeholder", "");
-        if (placeholder.isEmpty() || !Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) return "";
-        return PlaceholderAPI.setPlaceholders(player, placeholder);
+        String template = plugin.getPluginConfig().getString("format.prefix-placeholder", "");
+        if (template == null || template.isEmpty()) return "";
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            return PlaceholderAPI.setPlaceholders(player, template);
+        }
+        return template;
     }
 }
