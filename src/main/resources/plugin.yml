@@ -1,5 +1,5 @@
 name: ThunderChat
-version: '${project.version}'
+version: '${version}'
 main: me.ehsan.thunderchat.ThunderChat
 api-version: '1.21'
 author: Ehsan
