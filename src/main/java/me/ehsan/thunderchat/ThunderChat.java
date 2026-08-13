@@ -1,7 +1,9 @@
 package me.ehsan.thunderchat;
 
 import me.ehsan.thunderchat.channels.ChannelManager;
+import me.ehsan.thunderchat.channels.ChannelManager.Channel;
 import me.ehsan.thunderchat.commands.ChannelCommand;
+import me.ehsan.thunderchat.commands.ChatChannelCommand;
 import me.ehsan.thunderchat.commands.ChatMuteCommand;
 import me.ehsan.thunderchat.commands.IgnoreCommand;
 import me.ehsan.thunderchat.commands.MsgCommand;
@@ -25,8 +27,7 @@ public final class ThunderChat extends JavaPlugin {
     private MuteManager muteManager;
     private FileConfiguration config;
 
-    @Override
-    public void onEnable() {
+    @Override public void onEnable() {
         instance = this;
         loadPluginConfig();
         this.muteManager = new MuteManager(this);
@@ -43,20 +44,21 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("channel").setExecutor(new ChannelCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
         getCommand("chatmute").setExecutor(new ChatMuteCommand(this));
+        getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
+        getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
+        getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF));
+        getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
+        getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
+        getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK));
         printEnableBanner();
     }
 
-    @Override
-    public void onDisable() {
+    @Override public void onDisable() {
         if (ignoreManager != null) ignoreManager.save();
         getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled.");
     }
 
-    public void loadPluginConfig() {
-        saveDefaultConfig();
-        reloadConfig();
-        this.config = getConfig();
-    }
+    public void loadPluginConfig() { saveDefaultConfig(); reloadConfig(); this.config = getConfig(); }
 
     private void printEnableBanner() {
         String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET;
