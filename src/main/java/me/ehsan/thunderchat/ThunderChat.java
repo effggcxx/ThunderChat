@@ -5,7 +5,6 @@ import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import me.ehsan.thunderchat.commands.ChannelCommand;
 import me.ehsan.thunderchat.commands.ChatChannelCommand;
-import me.ehsan.thunderchat.commands.ChatMuteCommand;
 import me.ehsan.thunderchat.commands.IgnoreCommand;
 import me.ehsan.thunderchat.commands.MsgCommand;
 import me.ehsan.thunderchat.commands.ReplyCommand;
@@ -50,9 +49,8 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("unignore").setExecutor(ignoreCmd);
         getCommand("channel").setExecutor(new ChannelCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
-        getCommand("chatmute").setExecutor(new ChatMuteCommand(this));
 
-        // Use GlobalChatManager.Channel (not ChannelManager.Channel)
+        // Use GlobalChatManager.Channel for all network-wide chat channels.
         getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF));
