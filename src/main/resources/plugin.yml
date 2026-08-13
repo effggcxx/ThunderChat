@@ -45,6 +45,10 @@ commands:
   chatmute:
     description: Legacy chat mute command
     usage: /chatmute <player>
+  channelmutelist:
+    description: List globally muted channels and muted players per channel
+    usage: /channelmutelist [page]
+    aliases: [cml, mutelist]
   thunderchat:
     description: Reload config / admin subcommands
     usage: /thunderchat <reload>
@@ -99,7 +103,9 @@ permissions:
   thunderchat.bypass.spam:
     description: Bypass spam filter only
     default: op  
+  thunderchat.channelmutelist:
+    description: View the list of globally muted channels and muted players
+    default: op
   thunderchat.mention:
     description: Allows triggering @mentions
     default: true
-

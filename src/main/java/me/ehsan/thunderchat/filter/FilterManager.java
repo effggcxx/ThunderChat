@@ -1,197 +1,98 @@
-package me.ehsan.thunderchat.filter;
+package me.ehsan.thunderchat;
 
-import me.ehsan.thunderchat.ThunderChat;
+import me.ehsan.thunderchat.channels.ChannelManager;
+import me.ehsan.thunderchat.channels.GlobalChatManager;
+import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
+import me.ehsan.thunderchat.commands.ChannelCommand;
+import me.ehsan.thunderchat.commands.ChatChannelCommand;
+import me.ehsan.thunderchat.commands.ChatMuteCommand;
+import me.ehsan.thunderchat.commands.ChannelMuteListCommand;
+import me.ehsan.thunderchat.commands.IgnoreCommand;
+import me.ehsan.thunderchat.commands.MsgCommand;
+import me.ehsan.thunderchat.commands.ReplyCommand;
+import me.ehsan.thunderchat.commands.ThunderChatCommand;
+import me.ehsan.thunderchat.filter.FilterManager;
+import me.ehsan.thunderchat.listeners.ChatListener;
+import me.ehsan.thunderchat.messaging.IgnoreManager;
+import me.ehsan.thunderchat.messaging.PrivateMessageManager;
+import me.ehsan.thunderchat.muting.MuteManager;
 import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+public final class ThunderChat extends JavaPlugin {
+    private static ThunderChat instance;
+    private ChannelManager channelManager;
+    private GlobalChatManager globalChatManager;
+    private FilterManager filterManager;
+    private PrivateMessageManager messageManager;
+    private IgnoreManager ignoreManager;
+    private MuteManager muteManager;
+    private FileConfiguration config;
 
-/**
- * Chat filters: spam (similarity + timing score), caps, blocked words.
- * Spam uses Jaccard/LCS similarity against the player's last message only —
- * cheap enough to run on every chat message on a busy Paper server.
- */
-public class FilterManager {
+    @Override
+    public void onEnable() {
+        instance = this;
+        loadPluginConfig();
 
-    private final ThunderChat plugin;
+        this.muteManager = new MuteManager(this);
+        this.channelManager = new ChannelManager(this);
+        this.globalChatManager = new GlobalChatManager(this);
+        this.filterManager = new FilterManager(this);
+        this.messageManager = new PrivateMessageManager(this);
+        this.ignoreManager = new IgnoreManager(this);
 
-    /** Last chat message per player (raw text). */
-    private final Map<UUID, String> lastMessage = new ConcurrentHashMap<>();
+        getServer().getPluginManager().registerEvents(new ChatListener(this), this);
 
-    /** Epoch millis of last chat message per player. */
-    private final Map<UUID, Long> lastMessageTime = new ConcurrentHashMap<>();
+        getCommand("msg").setExecutor(new MsgCommand(this));
+        getCommand("reply").setExecutor(new ReplyCommand(this));
+        IgnoreCommand ignoreCmd = new IgnoreCommand(this);
+        getCommand("ignore").setExecutor(ignoreCmd);
+        getCommand("unignore").setExecutor(ignoreCmd);
+        getCommand("channel").setExecutor(new ChannelCommand(this));
+        getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
+        getCommand("chatmute").setExecutor(new ChatMuteCommand(this));
+        getCommand("channelmutelist").setExecutor(new ChannelMuteListCommand(this));
 
-    /** How many times in a row the player sent a highly similar message. */
-    private final Map<UUID, Integer> repeatStreak = new ConcurrentHashMap<>();
+        // Use GlobalChatManager.Channel (not ChannelManager.Channel)
+        getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
+        getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
+        getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF));
+        getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
+        getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
+        getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK));
 
-    public FilterManager(ThunderChat plugin) {
-        this.plugin = plugin;
+        printEnableBanner();
     }
 
-    public boolean isEnabled() {
-        return plugin.getPluginConfig().getBoolean("filter.enabled", true);
+    @Override
+    public void onDisable() {
+        if (ignoreManager != null) ignoreManager.save();
+        getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled.");
     }
 
-    /**
-     * Full filter pipeline. Returns {@code true} if the message should be blocked.
-     * On block, the player is notified in chat.
-     */
-    public boolean shouldBlock(Player player, String message) {
-        if (!isEnabled()) {
-            return false;
-        }
-
-        if (player.hasPermission("thunderchat.bypass.filter")
-                || player.hasPermission("thunderchat.bypass.spam")) {
-            recordMessage(player.getUniqueId(), message);
-            return false;
-        }
-
-        if (isSpam(player, message)) {
-            player.sendMessage(ChatColor.RED + "Please don't spam the chat.");
-            return true;
-        }
-
-        if (isExcessiveCaps(message) && !player.hasPermission("thunderchat.bypass.filter")) {
-            player.sendMessage(ChatColor.RED + "Please don't use excessive caps.");
-            return true;
-        }
-
-        if (containsBlockedWord(message) && !player.hasPermission("thunderchat.bypass.filter")) {
-            player.sendMessage(ChatColor.RED + "Your message contains a blocked word.");
-            return true;
-        }
-
-        recordMessage(player.getUniqueId(), message);
-        return false;
+    public void loadPluginConfig() {
+        saveDefaultConfig();
+        reloadConfig();
+        this.config = getConfig();
     }
 
-    /**
-     * Spam score:
-     * Similarity ≥ 90% → +2
-     * Similarity ≥ 80% → +1
-     * Exact same (sim 1.0) → +2
-     * Sent &lt; 3s after previous → +2
-     * Sent &lt; 10s after previous → +1
-     * 3+ similar repetitions in a row → +3
-     * Score ≥ threshold (default 5) → spam.
-     */
-    public boolean isSpam(Player player, String message) {
-        UUID id = player.getUniqueId();
-        String previous = lastMessage.get(id);
-        Long previousTime = lastMessageTime.get(id);
-
-        if (previous == null || previousTime == null) {
-            return false;
-        }
-
-        double similarity = ChatSimilarity.similarity(previous, message);
-        long elapsedSec = (System.currentTimeMillis() - previousTime) / 1000L;
-
-        int score = 0;
-
-        if (similarity >= 0.90) {
-            score += 2;
-        } else if (similarity >= 0.80) {
-            score += 1;
-        }
-
-        if (similarity >= 1.0) {
-            score += 2;
-        }
-
-        if (elapsedSec < 3) {
-            score += 2;
-        } else if (elapsedSec < 10) {
-            score += 1;
-        }
-
-        int streak = repeatStreak.getOrDefault(id, 0);
-        if (similarity >= 0.85) {
-            streak = streak + 1;
-        } else {
-            streak = 0;
-        }
-
-        if (streak >= 3) {
-            score += 3;
-        }
-
-        int spamThreshold = plugin.getPluginConfig().getInt("filter.spam.score-threshold", 5);
-        boolean spam = score >= spamThreshold;
-
-        if (spam) {
-            repeatStreak.put(id, streak);
-            lastMessageTime.put(id, System.currentTimeMillis());
-            return true;
-        }
-
-        if (similarity >= 0.85) {
-            repeatStreak.put(id, streak);
-        } else {
-            repeatStreak.put(id, 0);
-        }
-
-        return false;
+    private void printEnableBanner() {
+        String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET;
+        String version = getPluginMeta().getVersion();
+        getServer().getConsoleSender().sendMessage("");
+        getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "  ⚡ " + prefix + ChatColor.GRAY + " v" + version);
+        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "  ✔ Plugin enabled");
+        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "  ✔ Config loaded " + ChatColor.GRAY + "(" + config.getKeys(true).size() + " keys)");
+        getServer().getConsoleSender().sendMessage("");
     }
 
-    public boolean isExcessiveCaps(String message) {
-        int minLength = plugin.getPluginConfig().getInt("filter.caps.min-length-to-check", 8);
-        if (message.length() < minLength) {
-            return false;
-        }
-
-        int letters = 0;
-        int upper = 0;
-        for (int i = 0; i < message.length(); i++) {
-            char c = message.charAt(i);
-            if (Character.isLetter(c)) {
-                letters++;
-                if (Character.isUpperCase(c)) {
-                    upper++;
-                }
-            }
-        }
-
-        if (letters == 0) {
-            return false;
-        }
-
-        double maxPct = plugin.getPluginConfig().getDouble("filter.caps.max-percentage", 70);
-        return ((double) upper / letters) * 100.0 >= maxPct;
-    }
-
-    public boolean containsBlockedWord(String message) {
-        if (!plugin.getPluginConfig().getBoolean("filter.words.enabled", true)) {
-            return false;
-        }
-
-        java.util.List<String> blocked = plugin.getPluginConfig().getStringList("filter.words.blocked");
-        if (blocked == null || blocked.isEmpty()) {
-            return false;
-        }
-
-        String lower = message.toLowerCase(java.util.Locale.ROOT);
-        for (String word : blocked) {
-            if (word == null || word.isBlank()) continue;
-            if (lower.contains(word.toLowerCase(java.util.Locale.ROOT))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void recordMessage(UUID id, String message) {
-        lastMessage.put(id, message);
-        lastMessageTime.put(id, System.currentTimeMillis());
-    }
-
-    /** Clear tracking for a player (e.g. on quit). */
-    public void clear(UUID id) {
-        lastMessage.remove(id);
-        lastMessageTime.remove(id);
-        repeatStreak.remove(id);
-    }
+    public static ThunderChat getInstance() { return instance; }
+    public ChannelManager getChannelManager() { return channelManager; }
+    public GlobalChatManager getGlobalChatManager() { return globalChatManager; }
+    public FilterManager getFilterManager() { return filterManager; }
+    public PrivateMessageManager getMessageManager() { return messageManager; }
+    public IgnoreManager getIgnoreManager() { return ignoreManager; }
+    public MuteManager getMuteManager() { return muteManager; }
+    public FileConfiguration getPluginConfig() { return config; }
 }
