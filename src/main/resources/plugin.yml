@@ -17,9 +17,12 @@ commands:
   ignore:
     description: Toggle ignoring a player's messages
     usage: /ignore <player>
+  unignore:
+    description: Stop ignoring a player
+    usage: /unignore <player>
   channel:
-    description: Switch or manage chat channels
-    usage: /channel <name>
+    description: Switch between local, donator, and staff chat
+    usage: /channel <local|donator|staff>
     aliases: [ch]
   chatmute:
     description: Mute a player's chat
@@ -36,9 +39,15 @@ permissions:
   thunderchat.msg:
     description: Allows sending private messages
     default: true
+  thunderchat.ignore:
+    description: Allows using the ignore system
+    default: true
   thunderchat.channel.staff:
-    description: Access to the staff channel
+    description: Access to the network-wide staff channel
     default: op
+  thunderchat.channel.donator:
+    description: Access to the network-wide donator channel
+    default: false
   thunderchat.bypass.filter:
     description: Bypass spam/caps/word filter
     default: op
