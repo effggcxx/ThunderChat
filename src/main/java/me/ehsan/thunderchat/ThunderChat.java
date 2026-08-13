@@ -9,6 +9,8 @@ import me.ehsan.thunderchat.commands.ThunderChatCommand;
 import me.ehsan.thunderchat.commands.ChatMuteCommand;
 import me.ehsan.thunderchat.filter.FilterManager;
 import me.ehsan.thunderchat.listeners.ChatListener;
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ThunderChat extends JavaPlugin {
@@ -17,12 +19,13 @@ public final class ThunderChat extends JavaPlugin {
 
     private ChannelManager channelManager;
     private FilterManager filterManager;
+    private FileConfiguration config;
 
     @Override
     public void onEnable() {
         instance = this;
 
-        saveDefaultConfig();
+        loadPluginConfig();
 
         // Managers
         this.channelManager = new ChannelManager(this);
@@ -39,12 +42,36 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
         getCommand("chatmute").setExecutor(new ChatMuteCommand(this));
 
-        getLogger().info("ThunderChat enabled.");
+        printEnableBanner();
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("ThunderChat disabled.");
+        getServer().getConsoleSender().sendMessage(
+                ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled."
+        );
+    }
+
+    /**
+     * Saves the bundled default config.yml if none exists yet, then
+     * (re)loads it into memory. Called on enable and reused by /thunderchat reload.
+     */
+    public void loadPluginConfig() {
+        saveDefaultConfig();
+        reloadConfig();
+        this.config = getConfig();
+    }
+
+    private void printEnableBanner() {
+        String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET;
+        String version = getPluginMeta().getVersion();
+
+        getServer().getConsoleSender().sendMessage("");
+        getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "  ⚡ " + prefix + ChatColor.GRAY + " v" + version);
+        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "  ✔ Plugin enabled");
+        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "  ✔ Config loaded " + ChatColor.GRAY
+                + "(" + config.getKeys(true).size() + " keys)");
+        getServer().getConsoleSender().sendMessage("");
     }
 
     public static ThunderChat getInstance() {
@@ -57,5 +84,9 @@ public final class ThunderChat extends JavaPlugin {
 
     public FilterManager getFilterManager() {
         return filterManager;
+    }
+
+    public FileConfiguration getPluginConfig() {
+        return config;
     }
 }
