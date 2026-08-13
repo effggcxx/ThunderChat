@@ -1,0 +1,47 @@
+name: ThunderChat
+version: '${project.version}'
+main: me.ehsan.thunderchat.ThunderChat
+api-version: '1.21'
+author: Ehsan
+softdepend: [LuckPerms, PlaceholderAPI]
+
+commands:
+  msg:
+    description: Send a private message to a player
+    usage: /msg <player> <message>
+    aliases: [tell, w, whisper]
+  reply:
+    description: Reply to the last player who messaged you
+    usage: /reply <message>
+    aliases: [r]
+  ignore:
+    description: Toggle ignoring a player's messages
+    usage: /ignore <player>
+  channel:
+    description: Switch or manage chat channels
+    usage: /channel <name>
+    aliases: [ch]
+  chatmute:
+    description: Mute a player's chat
+    usage: /chatmute <player> [duration]
+  thunderchat:
+    description: Reload config / admin subcommands
+    usage: /thunderchat <reload>
+    aliases: [tc]
+
+permissions:
+  thunderchat.admin:
+    description: Access to admin/reload commands
+    default: op
+  thunderchat.msg:
+    description: Allows sending private messages
+    default: true
+  thunderchat.channel.staff:
+    description: Access to the staff channel
+    default: op
+  thunderchat.bypass.filter:
+    description: Bypass spam/caps/word filter
+    default: op
+  thunderchat.mention:
+    description: Allows triggering @mentions
+    default: true
