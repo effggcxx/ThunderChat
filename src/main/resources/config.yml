@@ -24,9 +24,13 @@ private-messages:
 filter:
   enabled: true
   spam:
+    # Score ≥ this value blocks the message
+    # sim≥90% +2, sim≥80% +1, exact +2, <3s +2, <10s +1, 3+ repeats +3
+    score-threshold: 5
     max-repeated-messages: 3
     cooldown-seconds: 2
   caps:
+    enabled: true
     max-percentage: 70
     min-length-to-check: 8
   words:

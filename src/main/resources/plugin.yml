@@ -96,6 +96,10 @@ permissions:
   thunderchat.bypass.filter:
     description: Bypass spam/caps/word filter
     default: op
+  thunderchat.bypass.spam:
+    description: Bypass spam filter only
+    default: op  
   thunderchat.mention:
     description: Allows triggering @mentions
     default: true
+

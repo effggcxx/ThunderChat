@@ -10,6 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 public class ChatListener implements Listener {
+
     private final ThunderChat plugin;
 
     public ChatListener(ThunderChat plugin) {
@@ -18,9 +19,16 @@ public class ChatListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onChat(AsyncChatEvent event) {
-        event.setCancelled(true);
         Player player = event.getPlayer();
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
+
+        // Filter on async thread; FilterManager uses ConcurrentHashMap.
+        if (plugin.getFilterManager().shouldBlock(player, message)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        event.setCancelled(true);
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             GlobalChatManager global = GlobalChatManager.getInstance();
             if (global != null && global.get(player) != null) {
