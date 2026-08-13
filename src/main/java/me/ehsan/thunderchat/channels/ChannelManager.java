@@ -25,12 +25,28 @@ public class ChannelManager implements PluginMessageListener {
     private static final String NETWORK_SUBCHANNEL = "ThunderChat";
 
     public enum Channel {
-        LOCAL("local"), DONATOR("donator"), STAFF("staff");
+        LOCAL("local", "LOCAL CHAT", false),
+        DONATOR("donator", "DONATOR CHAT", true),
+        STAFF("staff", "STAFF CHAT", true);
+
         private final String id;
-        Channel(String id) { this.id = id; }
+        private final String display;
+        private final boolean network;
+
+        Channel(String id, String display, boolean network) {
+            this.id = id;
+            this.display = display;
+            this.network = network;
+        }
+
         public String getId() { return id; }
+        public String getDisplayName() { return display; }
+        public boolean isNetwork() { return network; }
+
         public static Channel fromId(String id) {
-            for (Channel channel : values()) if (channel.id.equalsIgnoreCase(id)) return channel;
+            for (Channel channel : values()) {
+                if (channel.id.equalsIgnoreCase(id)) return channel;
+            }
             return null;
         }
     }

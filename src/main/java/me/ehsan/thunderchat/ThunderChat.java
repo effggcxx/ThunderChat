@@ -1,7 +1,8 @@
 package me.ehsan.thunderchat;
 
 import me.ehsan.thunderchat.channels.ChannelManager;
-import me.ehsan.thunderchat.channels.ChannelManager.Channel;
+import me.ehsan.thunderchat.channels.GlobalChatManager;
+import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import me.ehsan.thunderchat.commands.ChannelCommand;
 import me.ehsan.thunderchat.commands.ChatChannelCommand;
 import me.ehsan.thunderchat.commands.ChatMuteCommand;
@@ -21,21 +22,27 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class ThunderChat extends JavaPlugin {
     private static ThunderChat instance;
     private ChannelManager channelManager;
+    private GlobalChatManager globalChatManager;
     private FilterManager filterManager;
     private PrivateMessageManager messageManager;
     private IgnoreManager ignoreManager;
     private MuteManager muteManager;
     private FileConfiguration config;
 
-    @Override public void onEnable() {
+    @Override
+    public void onEnable() {
         instance = this;
         loadPluginConfig();
+
         this.muteManager = new MuteManager(this);
         this.channelManager = new ChannelManager(this);
+        this.globalChatManager = new GlobalChatManager(this);
         this.filterManager = new FilterManager(this);
         this.messageManager = new PrivateMessageManager(this);
         this.ignoreManager = new IgnoreManager(this);
+
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
+
         getCommand("msg").setExecutor(new MsgCommand(this));
         getCommand("reply").setExecutor(new ReplyCommand(this));
         IgnoreCommand ignoreCmd = new IgnoreCommand(this);
@@ -44,21 +51,29 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("channel").setExecutor(new ChannelCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
         getCommand("chatmute").setExecutor(new ChatMuteCommand(this));
+
+        // Use GlobalChatManager.Channel (not ChannelManager.Channel)
         getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF));
         getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
         getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
         getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK));
+
         printEnableBanner();
     }
 
-    @Override public void onDisable() {
+    @Override
+    public void onDisable() {
         if (ignoreManager != null) ignoreManager.save();
         getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled.");
     }
 
-    public void loadPluginConfig() { saveDefaultConfig(); reloadConfig(); this.config = getConfig(); }
+    public void loadPluginConfig() {
+        saveDefaultConfig();
+        reloadConfig();
+        this.config = getConfig();
+    }
 
     private void printEnableBanner() {
         String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET;
@@ -72,6 +87,7 @@ public final class ThunderChat extends JavaPlugin {
 
     public static ThunderChat getInstance() { return instance; }
     public ChannelManager getChannelManager() { return channelManager; }
+    public GlobalChatManager getGlobalChatManager() { return globalChatManager; }
     public FilterManager getFilterManager() { return filterManager; }
     public PrivateMessageManager getMessageManager() { return messageManager; }
     public IgnoreManager getIgnoreManager() { return ignoreManager; }
