@@ -30,8 +30,15 @@ public class PrivateMessageManager {
     /**
      * Sends a private message from one player to another, updates both
      * players' reply targets, and optionally logs it to console.
+     * Returns false if delivery was blocked (e.g. target is ignoring sender).
      */
-    public void send(Player sender, Player target, String message) {
+    public boolean send(Player sender, Player target, String message) {
+        // Target is ignoring the sender → block delivery and notify sender
+        if (plugin.getIgnoreManager().isIgnoring(target, sender)) {
+            sender.sendMessage(ChatColor.RED + target.getName() + " is ignoring you.");
+            return false;
+        }
+
         String toTarget = ChatColor.GRAY + "[" + ChatColor.LIGHT_PURPLE + sender.getName()
                 + ChatColor.GRAY + " -> " + ChatColor.LIGHT_PURPLE + "me" + ChatColor.GRAY + "] "
                 + ChatColor.WHITE + message;
@@ -49,6 +56,7 @@ public class PrivateMessageManager {
         if (plugin.getPluginConfig().getBoolean("private-messages.log-to-console", false)) {
             plugin.getLogger().info("[PM] " + sender.getName() + " -> " + target.getName() + ": " + message);
         }
+        return true;
     }
 
     /** Returns the player this UUID should /reply to, or null if none set / offline. */

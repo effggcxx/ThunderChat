@@ -8,6 +8,7 @@ import me.ehsan.thunderchat.commands.ChannelCommand;
 import me.ehsan.thunderchat.commands.ThunderChatCommand;
 import me.ehsan.thunderchat.commands.ChatMuteCommand;
 import me.ehsan.thunderchat.filter.FilterManager;
+import me.ehsan.thunderchat.messaging.IgnoreManager;
 import me.ehsan.thunderchat.messaging.PrivateMessageManager;
 import me.ehsan.thunderchat.listeners.ChatListener;
 import org.bukkit.ChatColor;
@@ -21,6 +22,7 @@ public final class ThunderChat extends JavaPlugin {
     private ChannelManager channelManager;
     private FilterManager filterManager;
     private PrivateMessageManager messageManager;
+    private IgnoreManager ignoreManager;
     private FileConfiguration config;
 
     @Override
@@ -33,6 +35,7 @@ public final class ThunderChat extends JavaPlugin {
         this.channelManager = new ChannelManager(this);
         this.filterManager = new FilterManager(this);
         this.messageManager = new PrivateMessageManager(this);
+        this.ignoreManager = new IgnoreManager(this);
 
         // Listeners
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
@@ -40,7 +43,9 @@ public final class ThunderChat extends JavaPlugin {
         // Commands
         getCommand("msg").setExecutor(new MsgCommand(this));
         getCommand("reply").setExecutor(new ReplyCommand(this));
-        getCommand("ignore").setExecutor(new IgnoreCommand(this));
+        IgnoreCommand ignoreCmd = new IgnoreCommand(this);
+        getCommand("ignore").setExecutor(ignoreCmd);
+        getCommand("unignore").setExecutor(ignoreCmd);
         getCommand("channel").setExecutor(new ChannelCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
         getCommand("chatmute").setExecutor(new ChatMuteCommand(this));
@@ -50,6 +55,9 @@ public final class ThunderChat extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (ignoreManager != null) {
+            ignoreManager.save();
+        }
         getServer().getConsoleSender().sendMessage(
                 ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled."
         );
@@ -91,6 +99,10 @@ public final class ThunderChat extends JavaPlugin {
 
     public PrivateMessageManager getMessageManager() {
         return messageManager;
+    }
+
+    public IgnoreManager getIgnoreManager() {
+        return ignoreManager;
     }
 
     public FileConfiguration getPluginConfig() {
