@@ -23,16 +23,16 @@ public final class ClearChatCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("thunderchat.clearchat")) {
-            sender.sendMessage(Component.text("You don't have permission to clear chat.", NamedTextColor.RED));
-            return true;
-        }
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("Only players can use this command.", NamedTextColor.RED));
             return true;
         }
 
         if (args.length == 0 || isLocal(args[0])) {
+            if (!hasClearPermission(player, "local")) {
+                player.sendMessage(Component.text("You don't have permission to clear this chat.", NamedTextColor.RED));
+                return true;
+            }
             clearLocal(player);
             return true;
         }
@@ -42,6 +42,10 @@ public final class ClearChatCommand implements CommandExecutor {
             player.sendMessage(Component.text("Unknown chat channel. Use local, global, staff, donator, admin, or highrank.", NamedTextColor.RED));
             return true;
         }
+        if (!hasClearPermission(player, channel.id())) {
+            player.sendMessage(Component.text("You don't have permission to clear that chat.", NamedTextColor.RED));
+            return true;
+        }
         if (!plugin.getGlobalChatManager().canUse(player, channel)) {
             player.sendMessage(Component.text("You don't have access to that chat channel.", NamedTextColor.RED));
             return true;
@@ -49,6 +53,11 @@ public final class ClearChatCommand implements CommandExecutor {
 
         plugin.getGlobalChatManager().clearChat(channel, player);
         return true;
+    }
+
+    private boolean hasClearPermission(Player player, String channel) {
+        return player.hasPermission("thunderchat.clearchat.*")
+                || player.hasPermission("thunderchat.clearchat." + channel);
     }
 
     private boolean isLocal(String input) {
@@ -69,11 +78,16 @@ public final class ClearChatCommand implements CommandExecutor {
 
     private void clearLocal(Player source) {
         for (Player target : Bukkit.getOnlinePlayers()) {
-            if (!target.hasPermission("thunderchat.bypass.clearchat")) {
+            if (!hasBypassPermission(target, "local")) {
                 sendClear(target);
             }
         }
         source.sendMessage(Component.text("Chat cleared for this gamemode.", NamedTextColor.GREEN));
+    }
+
+    public static boolean hasBypassPermission(Player player, String channel) {
+        return player.hasPermission("thunderchat.bypass.clearchat.*")
+                || player.hasPermission("thunderchat.bypass.clearchat." + channel);
     }
 
     public static void sendClear(Player target) {
