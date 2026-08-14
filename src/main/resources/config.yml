@@ -31,8 +31,6 @@ private-messages:
 filter:
   enabled: true
   spam:
-    # Score ≥ this value blocks the message
-    # sim≥90% +2, sim≥80% +1, exact +2, <3s +2, <10s +1, 3+ repeats +3
     score-threshold: 5
     max-repeated-messages: 3
     cooldown-seconds: 2
@@ -40,6 +38,49 @@ filter:
     enabled: true
     max-percentage: 70
     min-length-to-check: 8
+  swear:
+    enabled: true
+    # Add or remove words freely. Matching is case-insensitive.
+    # English words use word boundaries; Persian/non-Latin words also match inside compounds.
+    words:
+      - "fuck"
+      - "fucking"
+      - "fucked"
+      - "motherfucker"
+      - "shit"
+      - "bullshit"
+      - "bitch"
+      - "asshole"
+      - "bastard"
+      - "dick"
+      - "cock"
+      - "pussy"
+      - "cunt"
+      - "whore"
+      - "slut"
+      - "crap"
+      - "piss"
+      - "damn"
+      - "کص"
+      - "کس"
+      - "کیر"
+      - "کون"
+      - "کونده"
+      - "جنده"
+      - "فاحشه"
+      - "حرومزاده"
+      - "مادرجنده"
+      - "بی شرف"
+      - "بی‌شرف"
+      - "بی ناموس"
+      - "بی‌ناموس"
+      - "گه"
+      - "گوه"
+      - "عن"
+      - "لاشی"
+      - "عوضی"
+      - "الدنگ"
+      - "پفیوز"
   words:
     enabled: true
     blocked: []
