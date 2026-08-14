@@ -7,8 +7,8 @@
 #   "&8[&b%luckperms_prefix%&8] "
 #   The resolved value is available in chat formats through {prefix}.
 format:
-  normal: "{prefix}{player}&7: &f{message}"
-  global: "&7[{channel}] [{server}] {prefix}{player}&7: &f{message}"
+  normal: "{prefix}&r{player}&7: &f{message}"
+  global: "&7[{channel}] [{server}] {prefix}&r{player}&7: &f{message}"
   prefix-placeholder: "%luckperms_prefix% "
 network:
   enabled: true
