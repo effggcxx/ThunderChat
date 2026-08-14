@@ -65,11 +65,61 @@ permissions:
   thunderchat.ignore:
     description: Allows using the ignore system
     default: true
-  thunderchat.clearchat:
-    description: Allows clearing local and global chat
+  thunderchat.clearchat.*:
+    description: Allows clearing every ThunderChat channel
     default: op
-  thunderchat.bypass.clearchat:
-    description: Keeps previous chat visible when chat is cleared
+    children:
+      thunderchat.clearchat.local: true
+      thunderchat.clearchat.global: true
+      thunderchat.clearchat.staff: true
+      thunderchat.clearchat.donator: true
+      thunderchat.clearchat.admin: true
+      thunderchat.clearchat.highrank: true
+  thunderchat.clearchat.local:
+    description: Allows clearing local gamemode chat
+    default: op
+  thunderchat.clearchat.global:
+    description: Allows clearing global chat
+    default: op
+  thunderchat.clearchat.staff:
+    description: Allows clearing staff chat
+    default: op
+  thunderchat.clearchat.donator:
+    description: Allows clearing donator chat
+    default: op
+  thunderchat.clearchat.admin:
+    description: Allows clearing admin chat
+    default: op
+  thunderchat.clearchat.highrank:
+    description: Allows clearing high-rank chat
+    default: op
+  thunderchat.bypass.clearchat.*:
+    description: Keeps previous chat visible for every clear-chat channel
+    default: op
+    children:
+      thunderchat.bypass.clearchat.local: true
+      thunderchat.bypass.clearchat.global: true
+      thunderchat.bypass.clearchat.staff: true
+      thunderchat.bypass.clearchat.donator: true
+      thunderchat.bypass.clearchat.admin: true
+      thunderchat.bypass.clearchat.highrank: true
+  thunderchat.bypass.clearchat.local:
+    description: Bypass local gamemode chat clears
+    default: op
+  thunderchat.bypass.clearchat.global:
+    description: Bypass global chat clears
+    default: op
+  thunderchat.bypass.clearchat.staff:
+    description: Bypass staff chat clears
+    default: op
+  thunderchat.bypass.clearchat.donator:
+    description: Bypass donator chat clears
+    default: op
+  thunderchat.bypass.clearchat.admin:
+    description: Bypass admin chat clears
+    default: op
+  thunderchat.bypass.clearchat.highrank:
+    description: Bypass high-rank chat clears
     default: op
   thunderchat.channel.global:
     description: Access to global chat
