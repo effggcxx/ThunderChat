@@ -5,6 +5,7 @@ import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import me.ehsan.thunderchat.commands.ChannelCommand;
 import me.ehsan.thunderchat.commands.ChatChannelCommand;
+import me.ehsan.thunderchat.commands.ClearChatCommand;
 import me.ehsan.thunderchat.commands.IgnoreCommand;
 import me.ehsan.thunderchat.commands.MsgCommand;
 import me.ehsan.thunderchat.commands.ReplyCommand;
@@ -48,6 +49,7 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("ignore").setExecutor(ignoreCmd);
         getCommand("unignore").setExecutor(ignoreCmd);
         getCommand("channel").setExecutor(new ChannelCommand(this));
+        getCommand("clearchat").setExecutor(new ClearChatCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
         getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
@@ -64,11 +66,7 @@ public final class ThunderChat extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled.");
     }
 
-    public void loadPluginConfig() {
-        saveDefaultConfig();
-        reloadConfig();
-        this.config = getConfig();
-    }
+    public void loadPluginConfig() { saveDefaultConfig(); reloadConfig(); this.config = getConfig(); }
 
     private void printEnableBanner() {
         String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET;
