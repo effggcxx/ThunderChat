@@ -10,7 +10,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 public class ChatListener implements Listener {
-
     private final ThunderChat plugin;
 
     public ChatListener(ThunderChat plugin) {
@@ -22,19 +21,25 @@ public class ChatListener implements Listener {
         Player player = event.getPlayer();
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
 
-        // Filter on async thread; FilterManager uses ConcurrentHashMap.
         if (plugin.getFilterManager().shouldBlock(player, message)) {
             event.setCancelled(true);
             return;
         }
 
+        // Normalize all-caps messages unless the player has the bypass permission.
+        if (!plugin.getCapsManager().canBypass(player) && plugin.getCapsManager().isAllCaps(message)) {
+            message = plugin.getCapsManager().normalize(message);
+            plugin.getCapsManager().notifyPlayer(player);
+        }
+
+        final String finalMessage = message;
         event.setCancelled(true);
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             GlobalChatManager global = GlobalChatManager.getInstance();
             if (global != null && global.get(player) != null) {
-                global.send(player, message);
+                global.send(player, finalMessage);
             } else {
-                plugin.getChannelManager().sendChat(player, message);
+                plugin.getChannelManager().sendChat(player, finalMessage);
             }
         });
     }
