@@ -1,7 +1,6 @@
 package me.ehsan.thunderchat.commands;
 
 import me.ehsan.thunderchat.ThunderChat;
-import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -28,35 +27,44 @@ public final class ClearChatCommand implements CommandExecutor {
             sender.sendMessage(Component.text("You don't have permission to clear chat.", NamedTextColor.RED));
             return true;
         }
-
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("Only players can use this command.", NamedTextColor.RED));
             return true;
         }
 
-        if (args.length == 0) {
+        if (args.length == 0 || isLocal(args[0])) {
             clearLocal(player);
             return true;
         }
 
-        Channel channel = parseChannel(args[0]);
+        Channel channel = parseGlobalChannel(args[0]);
         if (channel == null) {
             player.sendMessage(Component.text("Unknown chat channel. Use local, global, staff, donator, admin, or highrank.", NamedTextColor.RED));
             return true;
         }
-
-        if (channel == Channel.GLOBAL || channel == Channel.STAFF || channel == Channel.DONATOR
-                || channel == Channel.ADMIN || channel == Channel.HIGHRANK) {
-            if (!plugin.getGlobalChatManager().canUse(player, channel)) {
-                player.sendMessage(Component.text("You don't have access to that chat channel.", NamedTextColor.RED));
-                return true;
-            }
-            plugin.getGlobalChatManager().clearChat(channel, player);
+        if (!plugin.getGlobalChatManager().canUse(player, channel)) {
+            player.sendMessage(Component.text("You don't have access to that chat channel.", NamedTextColor.RED));
             return true;
         }
 
-        clearLocal(player);
+        plugin.getGlobalChatManager().clearChat(channel, player);
         return true;
+    }
+
+    private boolean isLocal(String input) {
+        String value = input.toLowerCase(Locale.ROOT);
+        return value.equals("local") || value.equals("gamemode") || value.equals("server");
+    }
+
+    private Channel parseGlobalChannel(String input) {
+        return switch (input.toLowerCase(Locale.ROOT)) {
+            case "global", "chat" -> Channel.GLOBAL;
+            case "staff", "staffchat", "sc" -> Channel.STAFF;
+            case "donator", "donatorchat", "dc" -> Channel.DONATOR;
+            case "admin", "adminchat", "ac" -> Channel.ADMIN;
+            case "highrank", "highrankchat", "hc" -> Channel.HIGHRANK;
+            default -> null;
+        };
     }
 
     private void clearLocal(Player source) {
@@ -66,18 +74,6 @@ public final class ClearChatCommand implements CommandExecutor {
             }
         }
         source.sendMessage(Component.text("Chat cleared for this gamemode.", NamedTextColor.GREEN));
-    }
-
-    private Channel parseChannel(String input) {
-        return switch (input.toLowerCase(Locale.ROOT)) {
-            case "local", "gamemode", "server" -> null;
-            case "global", "chat" -> Channel.GLOBAL;
-            case "staff", "staffchat", "sc" -> Channel.STAFF;
-            case "donator", "donatorchat", "dc" -> Channel.DONATOR;
-            case "admin", "adminchat", "ac" -> Channel.ADMIN;
-            case "highrank", "highrankchat", "hc" -> Channel.HIGHRANK;
-            default -> null;
-        };
     }
 
     public static void sendClear(Player target) {
