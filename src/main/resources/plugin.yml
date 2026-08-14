@@ -24,6 +24,10 @@ commands:
     description: Switch between available chat channels
     usage: /channel <channel>
     aliases: [ch]
+  clearchat:
+    description: Clear local or global chat
+    usage: /clearchat [global|staff|donator|admin|highrank]
+    aliases: [cc]
   staffchat:
     description: Toggle staff chat
     aliases: [sc]
@@ -61,6 +65,12 @@ permissions:
   thunderchat.ignore:
     description: Allows using the ignore system
     default: true
+  thunderchat.clearchat:
+    description: Allows clearing local and global chat
+    default: op
+  thunderchat.bypass.clearchat:
+    description: Keeps previous chat visible when chat is cleared
+    default: op
   thunderchat.channel.global:
     description: Access to global chat
     default: false
