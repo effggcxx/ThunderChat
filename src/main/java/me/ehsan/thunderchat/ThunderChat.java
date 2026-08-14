@@ -9,6 +9,7 @@ import me.ehsan.thunderchat.commands.IgnoreCommand;
 import me.ehsan.thunderchat.commands.MsgCommand;
 import me.ehsan.thunderchat.commands.ReplyCommand;
 import me.ehsan.thunderchat.commands.ThunderChatCommand;
+import me.ehsan.thunderchat.filter.CapsManager;
 import me.ehsan.thunderchat.filter.FilterManager;
 import me.ehsan.thunderchat.listeners.ChatListener;
 import me.ehsan.thunderchat.messaging.IgnoreManager;
@@ -23,6 +24,7 @@ public final class ThunderChat extends JavaPlugin {
     private ChannelManager channelManager;
     private GlobalChatManager globalChatManager;
     private FilterManager filterManager;
+    private CapsManager capsManager;
     private PrivateMessageManager messageManager;
     private IgnoreManager ignoreManager;
     private MuteManager muteManager;
@@ -32,16 +34,14 @@ public final class ThunderChat extends JavaPlugin {
     public void onEnable() {
         instance = this;
         loadPluginConfig();
-
         this.muteManager = new MuteManager(this);
         this.channelManager = new ChannelManager(this);
         this.globalChatManager = new GlobalChatManager(this);
         this.filterManager = new FilterManager(this);
+        this.capsManager = new CapsManager(this);
         this.messageManager = new PrivateMessageManager(this);
         this.ignoreManager = new IgnoreManager(this);
-
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
-
         getCommand("msg").setExecutor(new MsgCommand(this));
         getCommand("reply").setExecutor(new ReplyCommand(this));
         IgnoreCommand ignoreCmd = new IgnoreCommand(this);
@@ -49,15 +49,12 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("unignore").setExecutor(ignoreCmd);
         getCommand("channel").setExecutor(new ChannelCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
-
-        // Use GlobalChatManager.Channel for all network-wide chat channels.
         getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF));
         getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
         getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
         getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK));
-
         printEnableBanner();
     }
 
@@ -87,6 +84,7 @@ public final class ThunderChat extends JavaPlugin {
     public ChannelManager getChannelManager() { return channelManager; }
     public GlobalChatManager getGlobalChatManager() { return globalChatManager; }
     public FilterManager getFilterManager() { return filterManager; }
+    public CapsManager getCapsManager() { return capsManager; }
     public PrivateMessageManager getMessageManager() { return messageManager; }
     public IgnoreManager getIgnoreManager() { return ignoreManager; }
     public MuteManager getMuteManager() { return muteManager; }
