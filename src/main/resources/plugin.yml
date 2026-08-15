@@ -22,7 +22,7 @@ commands:
     usage: /unignore <player>
   channel:
     description: Switch between available chat channels
-    usage: /channel <channel>
+    usage: /channel <local|global|staff|donator|admin|highrank>
     aliases: [ch]
   clearchat:
     description: Clear local or global chat
@@ -43,6 +43,8 @@ commands:
   highrankchat:
     description: Toggle high-rank chat
     aliases: [hc]
+  gc:
+    description: Toggle global chat
   chat:
     description: Manage chat, defaulting to local chat
     usage: /chat <clear|mute|unmute> [channel] [player]
@@ -123,7 +125,7 @@ permissions:
     default: op
   thunderchat.channel.global:
     description: Access to global chat
-    default: true
+    default: op
   thunderchat.channel.staff:
     description: Access to the network-wide staff channel
     default: op
