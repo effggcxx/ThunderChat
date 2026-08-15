@@ -26,7 +26,6 @@ public class ChatListener implements Listener {
             return;
         }
 
-        // Normalize all-caps messages unless the player has the bypass permission.
         if (!plugin.getCapsManager().canBypass(player) && plugin.getCapsManager().isAllCaps(message)) {
             message = plugin.getCapsManager().normalize(message);
             plugin.getCapsManager().notifyPlayer(player);
@@ -39,6 +38,10 @@ public class ChatListener implements Listener {
             if (global != null && global.get(player) != null) {
                 global.send(player, finalMessage);
             } else {
+                if (plugin.getMuteManager().isMuted(player, "local")) {
+                    player.sendMessage("§cLocal chat is currently muted for you.");
+                    return;
+                }
                 plugin.getChannelManager().sendChat(player, finalMessage);
             }
         });
