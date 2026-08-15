@@ -7,23 +7,273 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
+
 import java.io.*;
 import java.util.*;
 
+/**
+ * Unified channel state for local and network chat.
+ * Every player starts in LOCAL. Global channels are available when their
+ * permission allows them, and each channel can independently be hidden.
+ */
 public final class GlobalChatManager implements PluginMessageListener {
-    public enum Channel { GLOBAL("global","GLOBAL CHAT"), DONATOR("donator","DONATOR CHAT"), STAFF("staff","STAFF CHAT"), ADMIN("admin","ADMIN CHAT"), HIGHRANK("highrank","HIGH RANK CHAT"); final String id,display; Channel(String id,String display){this.id=id;this.display=display;} public String id(){return id;} }
+    public enum Channel {
+        LOCAL("local", "LOCAL CHAT", false),
+        GLOBAL("global", "GLOBAL CHAT", true),
+        DONATOR("donator", "DONATOR CHAT", true),
+        STAFF("staff", "STAFF CHAT", true),
+        ADMIN("admin", "ADMIN CHAT", true),
+        HIGHRANK("highrank", "HIGH RANK CHAT", true);
+
+        private final String id;
+        private final String display;
+        private final boolean network;
+
+        Channel(String id, String display, boolean network) {
+            this.id = id;
+            this.display = display;
+            this.network = network;
+        }
+
+        public String id() { return id; }
+        public String display() { return display; }
+        public boolean isNetwork() { return network; }
+
+        public static Channel fromId(String id) {
+            for (Channel channel : values()) {
+                if (channel.id.equalsIgnoreCase(id)) return channel;
+            }
+            return null;
+        }
+    }
+
     private static GlobalChatManager instance;
-    private final ThunderChat plugin; private final Map<UUID,Channel> active=new HashMap<>();
-    public GlobalChatManager(ThunderChat plugin){this.plugin=plugin;instance=this;plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin,"BungeeCord");plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin,"BungeeCord",this);}
-    public static GlobalChatManager getInstance(){return instance;}
-    public Channel get(Player p){return active.get(p.getUniqueId());} public void set(Player p,Channel c){if(c==null)active.remove(p.getUniqueId());else active.put(p.getUniqueId(),c);}
-    public boolean canUse(Player p,Channel c){return p.hasPermission(plugin.getPluginConfig().getString("channels."+c.id+".permission","thunderchat.channel."+c.id));}
-    public void send(Player p,String text){Channel c=get(p);if(c==null)return;if(plugin.getMuteManager().isMuted(p,c.id)){p.sendMessage(ChatColor.RED+"That chat is currently muted for you.");return;}String pre=prefix(p),server=plugin.getPluginConfig().getString("network.server-name","server");String f=plugin.getPluginConfig().getString("format.global","&7[{channel}] [{server}] {prefix}{player}&7: &f{message}");String out=format(f,c,server,pre,p.getName(),text);for(Player r:Bukkit.getOnlinePlayers())if(canUse(r,c)&&!plugin.getMuteManager().isMuted(r,c.id))r.sendMessage(out);forwardChat(p,c,pre,text,server);}
-    public void clearChat(Channel c,Player source){for(Player r:Bukkit.getOnlinePlayers())if(canUse(r,c)&&!ClearChatCommand.hasBypassPermission(r,c.id))ClearChatCommand.sendClear(r);forwardClear(source,c);source.sendMessage(ChatColor.GREEN+"Cleared "+c.display.toLowerCase(Locale.ROOT)+" network chat.");}
-    private String format(String f,Channel c,String s,String pre,String player,String msg){return ChatColor.translateAlternateColorCodes('&',f.replace("{channel}",c.display).replace("{server}",s).replace("{prefix}",pre).replace("{player}",player).replace("{message}",msg));}
-    private String prefix(Player p){String x=plugin.getPluginConfig().getString("format.prefix-placeholder","");return x.isEmpty()||!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")?"":PlaceholderAPI.setPlaceholders(p,x);}
-    private void forwardChat(Player p,Channel c,String pre,String msg,String server){try{ByteArrayOutputStream b=new ByteArrayOutputStream();DataOutputStream d=new DataOutputStream(b);d.writeInt(3);d.writeUTF("CHAT");d.writeUTF(c.id);d.writeUTF(p.getName());d.writeUTF(server);d.writeUTF(pre);d.writeUTF(msg);d.flush();sendNetwork(p,b.toByteArray());}catch(IOException e){plugin.getLogger().warning("Could not forward global chat: "+e.getMessage());}}
-    private void forwardClear(Player p,Channel c){try{ByteArrayOutputStream b=new ByteArrayOutputStream();DataOutputStream d=new DataOutputStream(b);d.writeInt(1);d.writeUTF("CLEAR");d.writeUTF(c.id);d.flush();sendNetwork(p,b.toByteArray());}catch(IOException e){plugin.getLogger().warning("Could not forward chat clear: "+e.getMessage());}}
-    private void sendNetwork(Player p,byte[] payload)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();DataOutputStream x=new DataOutputStream(o);x.writeUTF("Forward");x.writeUTF("ALL");x.writeUTF("ThunderChat");x.writeShort(payload.length);x.write(payload);x.flush();p.sendPluginMessage(plugin,"BungeeCord",o.toByteArray());}
-    @Override public void onPluginMessageReceived(String ch,Player source,byte[] data){if(!"BungeeCord".equals(ch))return;try{DataInputStream o=new DataInputStream(new ByteArrayInputStream(data));if(!"ThunderChat".equals(o.readUTF()))return;int n=o.readUnsignedShort();if(n<=0||n>o.available())return;byte[] b=new byte[n];o.readFully(b);DataInputStream d=new DataInputStream(new ByteArrayInputStream(b));int type=d.readInt();String kind=d.readUTF();if(type==1&&"CLEAR".equals(kind)){Channel c=Channel.valueOf(d.readUTF().toUpperCase(Locale.ROOT));for(Player r:Bukkit.getOnlinePlayers())if(canUse(r,c)&&!ClearChatCommand.hasBypassPermission(r,c.id))ClearChatCommand.sendClear(r);return;}if(type!=3||!"CHAT".equals(kind))return;Channel c=Channel.valueOf(d.readUTF().toUpperCase(Locale.ROOT));String player=d.readUTF(),server=d.readUTF(),pre=d.readUTF(),msg=d.readUTF();String f=plugin.getPluginConfig().getString("format.global","&7[{channel}] [{server}] {prefix}{player}&7: &f{message}");String out=format(f,c,server,pre,player,msg);for(Player r:Bukkit.getOnlinePlayers())if(canUse(r,c)&&!plugin.getMuteManager().isMuted(r,c.id))r.sendMessage(out);}catch(Exception e){plugin.getLogger().warning("Malformed ThunderChat network message.");}}
+    private final ThunderChat plugin;
+    private final Map<UUID, Channel> active = new HashMap<>();
+    private final Map<UUID, EnumSet<Channel>> hidden = new HashMap<>();
+
+    public GlobalChatManager(ThunderChat plugin) {
+        this.plugin = plugin;
+        instance = this;
+        plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, "BungeeCord");
+        plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, "BungeeCord", this);
+    }
+
+    public static GlobalChatManager getInstance() { return instance; }
+
+    public Channel get(Player player) {
+        return active.getOrDefault(player.getUniqueId(), Channel.LOCAL);
+    }
+
+    public void set(Player player, Channel channel) {
+        active.put(player.getUniqueId(), channel == null ? Channel.LOCAL : channel);
+    }
+
+    public void toggle(Player player, Channel channel) {
+        set(player, get(player) == channel ? Channel.LOCAL : channel);
+    }
+
+    public boolean canUse(Player player, Channel channel) {
+        if (channel == Channel.LOCAL) return true;
+        return player.hasPermission(plugin.getPluginConfig().getString(
+                "channels." + channel.id + ".permission",
+                "thunderchat.channel." + channel.id));
+    }
+
+    public boolean isHidden(Player player, Channel channel) {
+        return hidden.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Channel.class)).contains(channel);
+    }
+
+    public void setHidden(Player player, Channel channel, boolean value) {
+        EnumSet<Channel> channels = hidden.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Channel.class));
+        if (value) channels.add(channel);
+        else channels.remove(channel);
+        if (get(player) == channel && value) set(player, Channel.LOCAL);
+        if (channels.isEmpty()) hidden.remove(player.getUniqueId());
+    }
+
+    public void toggleHidden(Player player, Channel channel) {
+        setHidden(player, channel, !isHidden(player, channel));
+    }
+
+    public void hideAll(Player player) {
+        EnumSet<Channel> channels = EnumSet.allOf(Channel.class);
+        hidden.put(player.getUniqueId(), channels);
+        set(player, Channel.LOCAL);
+    }
+
+    public void showAll(Player player) {
+        hidden.remove(player.getUniqueId());
+    }
+
+    /** Returns channels the player is allowed to use/switch to. LOCAL is always present. */
+    public List<Channel> getAvailableChannels(Player player) {
+        List<Channel> result = new ArrayList<>();
+        for (Channel channel : Channel.values()) {
+            if (canUse(player, channel)) result.add(channel);
+        }
+        return result;
+    }
+
+    public void send(Player player, String text) {
+        Channel channel = get(player);
+        if (!canUse(player, channel)) {
+            set(player, Channel.LOCAL);
+            channel = Channel.LOCAL;
+        }
+        if (plugin.getMuteManager().isMuted(player, channel.id)) {
+            player.sendMessage(ChatColor.RED + "That chat is currently muted for you.");
+            return;
+        }
+
+        String prefix = prefix(player);
+        String server = plugin.getPluginConfig().getString("network.server-name", "server");
+        String format = plugin.getPluginConfig().getString(
+                channel == Channel.LOCAL ? "format.normal" : "format.global",
+                channel == Channel.LOCAL
+                        ? "{prefix}{player}&7: &f{message}"
+                        : "&7[{channel}] [{server}] {prefix}{player}&7: &f{message}");
+        String output = format(format, channel, server, prefix, player.getName(), text);
+
+        for (Player recipient : Bukkit.getOnlinePlayers()) {
+            if (channel == Channel.LOCAL) {
+                if (!isHidden(recipient, Channel.LOCAL)) recipient.sendMessage(output);
+            } else if (canUse(recipient, channel) && !isHidden(recipient, channel)
+                    && !plugin.getMuteManager().isMuted(recipient, channel.id)) {
+                recipient.sendMessage(output);
+            }
+        }
+
+        if (channel.isNetwork()) forwardChat(player, channel, prefix, text, server);
+    }
+
+    public void clearChat(Channel channel, Player source) {
+        if (channel == Channel.LOCAL) {
+            for (Player recipient : Bukkit.getOnlinePlayers()) {
+                if (!isHidden(recipient, Channel.LOCAL)
+                        && !ClearChatCommand.hasBypassPermission(recipient, "local")) {
+                    ClearChatCommand.sendClear(recipient);
+                }
+            }
+            source.sendMessage(ChatColor.GREEN + "Chat cleared for this gamemode.");
+            return;
+        }
+
+        for (Player recipient : Bukkit.getOnlinePlayers()) {
+            if (canUse(recipient, channel) && !isHidden(recipient, channel)
+                    && !ClearChatCommand.hasBypassPermission(recipient, channel.id)) {
+                ClearChatCommand.sendClear(recipient);
+            }
+        }
+        forwardClear(source, channel);
+        source.sendMessage(ChatColor.GREEN + "Cleared " + channel.display.toLowerCase(Locale.ROOT) + ".");
+    }
+
+    private String format(String format, Channel channel, String server, String prefix, String player, String message) {
+        return ChatColor.translateAlternateColorCodes('&', format
+                .replace("{channel}", channel.display)
+                .replace("{server}", server)
+                .replace("{prefix}", prefix)
+                .replace("{player}", player)
+                .replace("{message}", message));
+    }
+
+    private String prefix(Player player) {
+        String template = plugin.getPluginConfig().getString("format.prefix-placeholder", "");
+        if (template == null || template.isEmpty() || !Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) return "";
+        return PlaceholderAPI.setPlaceholders(player, template);
+    }
+
+    private void forwardChat(Player player, Channel channel, String prefix, String message, String server) {
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            DataOutputStream data = new DataOutputStream(bytes);
+            data.writeInt(3);
+            data.writeUTF("CHAT");
+            data.writeUTF(channel.id);
+            data.writeUTF(player.getName());
+            data.writeUTF(server);
+            data.writeUTF(prefix);
+            data.writeUTF(message);
+            data.flush();
+            sendNetwork(player, bytes.toByteArray());
+        } catch (IOException e) {
+            plugin.getLogger().warning("Could not forward global chat: " + e.getMessage());
+        }
+    }
+
+    private void forwardClear(Player player, Channel channel) {
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            DataOutputStream data = new DataOutputStream(bytes);
+            data.writeInt(1);
+            data.writeUTF("CLEAR");
+            data.writeUTF(channel.id);
+            data.flush();
+            sendNetwork(player, bytes.toByteArray());
+        } catch (IOException e) {
+            plugin.getLogger().warning("Could not forward chat clear: " + e.getMessage());
+        }
+    }
+
+    private void sendNetwork(Player player, byte[] payload) throws IOException {
+        ByteArrayOutputStream outerBytes = new ByteArrayOutputStream();
+        DataOutputStream outer = new DataOutputStream(outerBytes);
+        outer.writeUTF("Forward");
+        outer.writeUTF("ALL");
+        outer.writeUTF("ThunderChat");
+        outer.writeShort(payload.length);
+        outer.write(payload);
+        outer.flush();
+        player.sendPluginMessage(plugin, "BungeeCord", outerBytes.toByteArray());
+    }
+
+    @Override
+    public void onPluginMessageReceived(String channel, Player source, byte[] data) {
+        if (!"BungeeCord".equals(channel)) return;
+        try {
+            DataInputStream outer = new DataInputStream(new ByteArrayInputStream(data));
+            if (!"ThunderChat".equals(outer.readUTF())) return;
+            int length = outer.readUnsignedShort();
+            if (length <= 0 || length > outer.available()) return;
+            byte[] payload = new byte[length];
+            outer.readFully(payload);
+
+            DataInputStream input = new DataInputStream(new ByteArrayInputStream(payload));
+            int type = input.readInt();
+            String kind = input.readUTF();
+
+            if (type == 1 && "CLEAR".equals(kind)) {
+                Channel clearChannel = Channel.fromId(input.readUTF());
+                if (clearChannel == null || clearChannel == Channel.LOCAL) return;
+                for (Player recipient : Bukkit.getOnlinePlayers()) {
+                    if (canUse(recipient, clearChannel) && !isHidden(recipient, clearChannel)
+                            && !ClearChatCommand.hasBypassPermission(recipient, clearChannel.id)) {
+                        ClearChatCommand.sendClear(recipient);
+                    }
+                }
+                return;
+            }
+
+            if (type != 3 || !"CHAT".equals(kind)) return;
+            Channel chatChannel = Channel.fromId(input.readUTF());
+            if (chatChannel == null || chatChannel == Channel.LOCAL) return;
+            String player = input.readUTF();
+            String server = input.readUTF();
+            String prefix = input.readUTF();
+            String message = input.readUTF();
+            String format = plugin.getPluginConfig().getString("format.global",
+                    "&7[{channel}] [{server}] {prefix}{player}&7: &f{message}");
+            String output = format(format, chatChannel, server, prefix, player, message);
+
+            for (Player recipient : Bukkit.getOnlinePlayers()) {
+                if (canUse(recipient, chatChannel) && !isHidden(recipient, chatChannel)
+                        && !plugin.getMuteManager().isMuted(recipient, chatChannel.id)) {
+                    recipient.sendMessage(output);
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Malformed ThunderChat network message.");
+        }
+    }
 }
