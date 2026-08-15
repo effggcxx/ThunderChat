@@ -51,8 +51,8 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("channel").setExecutor(new ChannelCommand(this));
         getCommand("clearchat").setExecutor(new ClearChatCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
+        // /chat is the single general chat-management command. It defaults to local chat.
         getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
-        getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF));
         getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
         getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
