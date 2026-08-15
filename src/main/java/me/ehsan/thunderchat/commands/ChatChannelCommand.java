@@ -52,23 +52,34 @@ public final class ChatChannelCommand implements CommandExecutor {
 
         if (action.equals("mute") || action.equals("unmute")) {
             boolean muted = action.equals("mute");
-            String channel = args.length > 1 ? normalizeChannel(args[1]) : "local";
-            if (channel == null) {
-                sender.sendMessage(ChatColor.RED + "Unknown chat channel. Use local, global, staff, donator, admin, or highrank.");
-                return true;
-            }
             if (!sender.hasPermission("thunderchat.admin")) {
                 sender.sendMessage(ChatColor.RED + "You don't have permission to manage chat mutes.");
                 return true;
             }
 
-            int targetIndex = args.length > 1 ? 2 : 1;
+            // /chat mute -> local global mute
+            // /chat mute <player> -> local player mute
+            // /chat mute <channel> -> global mute for that channel
+            // /chat mute <channel> <player> -> player mute in that channel
+            String channel = "local";
+            int targetIndex = -1;
+
+            if (args.length > 1) {
+                String possibleChannel = normalizeChannel(args[1]);
+                if (possibleChannel != null) {
+                    channel = possibleChannel;
+                    targetIndex = 2;
+                } else {
+                    targetIndex = 1;
+                }
+            }
+
             if (args.length > targetIndex + 1) {
                 sender.sendMessage(ChatColor.RED + "Usage: /chat " + action + " [channel] [player]");
                 return true;
             }
 
-            if (args.length == targetIndex) {
+            if (targetIndex == -1 || args.length == targetIndex) {
                 plugin.getMuteManager().setGlobalMuted(channel, muted);
                 sender.sendMessage(ChatColor.GREEN + channel.toUpperCase(Locale.ROOT) + " CHAT " + (muted ? "muted" : "unmuted") + " globally.");
                 return true;
@@ -86,28 +97,7 @@ public final class ChatChannelCommand implements CommandExecutor {
             return true;
         }
 
-        // Explicit /chat <channel> switches the player to a network channel.
-        String channelId = normalizeChannel(args[0]);
-        if (channelId == null || channelId.equals("local")) {
-            sender.sendMessage(ChatColor.RED + "Usage: /chat <clear|mute|unmute> [channel] [player]");
-            return true;
-        }
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(ChatColor.RED + "Only players can switch chat channels.");
-            return true;
-        }
-        Channel channel = GlobalChatManager.Channel.fromId(channelId);
-        if (channel == null || !plugin.getGlobalChatManager().canUse(player, channel)) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use that channel.");
-            return true;
-        }
-        if (plugin.getGlobalChatManager().get(player) == channel) {
-            plugin.getGlobalChatManager().set(player, null);
-            player.sendMessage(ChatColor.GREEN + "Chat channel disabled. You are back in local chat.");
-        } else {
-            plugin.getGlobalChatManager().set(player, channel);
-            player.sendMessage(ChatColor.GREEN + "Chat channel set to " + ChatColor.YELLOW + channel.name() + ChatColor.GREEN + ".");
-        }
+        sender.sendMessage(ChatColor.RED + "Usage: /chat <clear|mute|unmute> [channel] [player]");
         return true;
     }
 }
