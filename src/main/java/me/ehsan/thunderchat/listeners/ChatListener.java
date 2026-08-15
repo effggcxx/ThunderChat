@@ -34,16 +34,8 @@ public class ChatListener implements Listener {
         final String finalMessage = message;
         event.setCancelled(true);
         plugin.getServer().getScheduler().runTask(plugin, () -> {
-            GlobalChatManager global = GlobalChatManager.getInstance();
-            if (global != null && global.get(player) != null) {
-                global.send(player, finalMessage);
-            } else {
-                if (plugin.getMuteManager().isMuted(player, "local")) {
-                    player.sendMessage("§cLocal chat is currently muted for you.");
-                    return;
-                }
-                plugin.getChannelManager().sendChat(player, finalMessage);
-            }
+            GlobalChatManager channels = plugin.getGlobalChatManager();
+            channels.send(player, finalMessage);
         });
     }
 }
