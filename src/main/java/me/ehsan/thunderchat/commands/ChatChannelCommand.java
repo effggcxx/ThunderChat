@@ -14,11 +14,15 @@ import org.bukkit.entity.Player;
 import java.util.Locale;
 import java.util.UUID;
 
-/** Handles /chat. Local chat is the default; global channels are explicit. */
+/** Handles /chat and the dedicated /staffchat, /donatorchat, /adminchat and /highrankchat toggles. */
 public final class ChatChannelCommand implements CommandExecutor {
     private final ThunderChat plugin;
+    private final Channel dedicatedChannel;
 
-    public ChatChannelCommand(ThunderChat plugin, Channel ignored) { this.plugin = plugin; }
+    public ChatChannelCommand(ThunderChat plugin, Channel dedicatedChannel) {
+        this.plugin = plugin;
+        this.dedicatedChannel = dedicatedChannel;
+    }
 
     private String normalizeChannel(String value) {
         return switch (value.toLowerCase(Locale.ROOT)) {
@@ -34,8 +38,32 @@ public final class ChatChannelCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "Only players can use chat channel commands.");
+            return true;
+        }
+
+        GlobalChatManager channels = plugin.getGlobalChatManager();
+
+        // Dedicated aliases toggle their channel: /sc -> staff, /sc again -> local.
+        if (dedicatedChannel != null) {
+            if (!channels.canUse(player, dedicatedChannel)) {
+                player.sendMessage(ChatColor.RED + "You don't have permission to use that chat channel.");
+                return true;
+            }
+            channels.toggle(player, dedicatedChannel);
+            Channel active = channels.get(player);
+            player.sendMessage(ChatColor.GREEN + "Chat channel: " + ChatColor.YELLOW + active.display() + ChatColor.GREEN + ".");
+            return true;
+        }
+
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.GREEN + "Chat defaults to LOCAL CHAT on this gamemode.");
+            player.sendMessage(ChatColor.GRAY + "Current channel: " + ChatColor.YELLOW + channels.get(player).id());
+            player.sendMessage(ChatColor.GRAY + "Available channels:");
+            for (Channel channel : channels.getAvailableChannels(player)) {
+                String state = channels.isHidden(player, channel) ? ChatColor.DARK_GRAY + " (hidden)" : "";
+                player.sendMessage(ChatColor.GRAY + " - " + ChatColor.YELLOW + channel.id() + state);
+            }
             return true;
         }
 
@@ -43,27 +71,22 @@ public final class ChatChannelCommand implements CommandExecutor {
         if (action.equals("clear")) {
             String targetChannel = args.length > 1 ? normalizeChannel(args[1]) : "local";
             if (targetChannel == null) {
-                sender.sendMessage(ChatColor.RED + "Unknown chat channel. Use local, global, staff, donator, admin, or highrank.");
+                player.sendMessage(ChatColor.RED + "Unknown chat channel. Use local, global, staff, donator, admin, or highrank.");
                 return true;
             }
             String[] clearArgs = targetChannel.equals("local") ? new String[0] : new String[]{targetChannel};
-            return new ClearChatCommand(plugin).onCommand(sender, command, label, clearArgs);
+            return new ClearChatCommand(plugin).onCommand(player, command, label, clearArgs);
         }
 
         if (action.equals("mute") || action.equals("unmute")) {
             boolean muted = action.equals("mute");
-            if (!sender.hasPermission("thunderchat.admin")) {
-                sender.sendMessage(ChatColor.RED + "You don't have permission to manage chat mutes.");
+            if (!player.hasPermission("thunderchat.admin")) {
+                player.sendMessage(ChatColor.RED + "You don't have permission to manage chat mutes.");
                 return true;
             }
 
-            // /chat mute -> local global mute
-            // /chat mute <player> -> local player mute
-            // /chat mute <channel> -> global mute for that channel
-            // /chat mute <channel> <player> -> player mute in that channel
             String channel = "local";
             int targetIndex = -1;
-
             if (args.length > 1) {
                 String possibleChannel = normalizeChannel(args[1]);
                 if (possibleChannel != null) {
@@ -75,29 +98,29 @@ public final class ChatChannelCommand implements CommandExecutor {
             }
 
             if (args.length > targetIndex + 1) {
-                sender.sendMessage(ChatColor.RED + "Usage: /chat " + action + " [channel] [player]");
+                player.sendMessage(ChatColor.RED + "Usage: /chat " + action + " [channel] [player]");
                 return true;
             }
 
             if (targetIndex == -1 || args.length == targetIndex) {
                 plugin.getMuteManager().setGlobalMuted(channel, muted);
-                sender.sendMessage(ChatColor.GREEN + channel.toUpperCase(Locale.ROOT) + " CHAT " + (muted ? "muted" : "unmuted") + " globally.");
+                player.sendMessage(ChatColor.GREEN + channel.toUpperCase(Locale.ROOT) + " CHAT " + (muted ? "muted" : "unmuted") + " globally.");
                 return true;
             }
 
             OfflinePlayer target = Bukkit.getOfflinePlayerIfCached(args[targetIndex]);
             if (target == null) target = Bukkit.getPlayerExact(args[targetIndex]);
             if (target == null) {
-                sender.sendMessage(ChatColor.RED + "That player is not cached on this server.");
+                player.sendMessage(ChatColor.RED + "That player is not cached on this server.");
                 return true;
             }
             UUID uuid = target.getUniqueId();
             plugin.getMuteManager().setPlayerMuted(channel, uuid, muted);
-            sender.sendMessage(ChatColor.GREEN + target.getName() + " has been " + (muted ? "muted in " : "unmuted in ") + channel.toUpperCase(Locale.ROOT) + " CHAT.");
+            player.sendMessage(ChatColor.GREEN + target.getName() + " has been " + (muted ? "muted in " : "unmuted in ") + channel.toUpperCase(Locale.ROOT) + " CHAT.");
             return true;
         }
 
-        sender.sendMessage(ChatColor.RED + "Usage: /chat <clear|mute|unmute> [channel] [player]");
+        player.sendMessage(ChatColor.RED + "Usage: /chat <clear|mute|unmute> [channel] [player]");
         return true;
     }
 }
