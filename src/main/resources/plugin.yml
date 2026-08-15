@@ -177,6 +177,34 @@ permissions:
   thunderchat.bypass.advertisement:
     description: Bypass the anti-advertisement filter
     default: op
+  thunderchat.alert.*:
+    description: Receive every ThunderChat filter alert
+    default: op
+    children:
+      thunderchat.alert.spam: true
+      thunderchat.alert.flood: true
+      thunderchat.alert.caps: true
+      thunderchat.alert.swear: true
+      thunderchat.alert.advertisement: true
+      thunderchat.alert.words: true
+  thunderchat.alert.spam:
+    description: Receive spam detection alerts
+    default: op
+  thunderchat.alert.flood:
+    description: Receive flood detection alerts
+    default: op
+  thunderchat.alert.caps:
+    description: Receive caps detection alerts
+    default: op
+  thunderchat.alert.swear:
+    description: Receive swear-word detection alerts
+    default: op
+  thunderchat.alert.advertisement:
+    description: Receive advertisement detection alerts
+    default: op
+  thunderchat.alert.words:
+    description: Receive blocked-word detection alerts
+    default: op
   thunderchat.channelmutelist:
     description: View the list of globally muted channels and muted players
     default: op
