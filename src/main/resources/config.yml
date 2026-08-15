@@ -1,15 +1,28 @@
 # ThunderChat configuration
 #
-# Chat prefixes:
-#   prefix-placeholder accepts any PlaceholderAPI placeholder.
-#   Example for LuckPerms: "%luckperms_prefix% "
-#   You can combine placeholders and normal text, for example:
-#   "&8[&b%luckperms_prefix%&8] "
-#   The resolved value is available in chat formats through {prefix}.
+# Every channel has its own format under format.channels.<channel>.
+# Built-in placeholders available in every format:
+#   {channel}  - channel display name
+#   {server}   - backend server name from network.server-name
+#   {prefix}   - resolved value of format.prefix-placeholder
+#   {player}   - sender name
+#   {message}  - chat message
+#
+# Any PlaceholderAPI placeholder can also be used directly in a channel format.
+# Example: %luckperms_prefix%, %player_ping%, %world_name%, etc.
+# PlaceholderAPI must provide the requested expansion.
 format:
-  normal: "{prefix}&r{player}&7: &f{message}"
-  global: "&7[{channel}] [{server}] {prefix}&r{player}&7: &f{message}"
   prefix-placeholder: "%luckperms_prefix% "
+  # Kept for backwards compatibility; channel-specific values below take priority.
+  normal: "{prefix}&r{player}&7: &f{message}"
+  global: "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
+  channels:
+    local: "{prefix}&r{player}&7: &f{message}"
+    global: "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
+    staff: "&c[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
+    donator: "&6[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
+    admin: "&4[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
+    highrank: "&b[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
 network:
   enabled: true
   server-name: "skymine"
@@ -36,7 +49,6 @@ filter:
     cooldown-seconds: 2
   flood:
     enabled: true
-    # A message is considered flood when the same character appears this many times consecutively.
     max-consecutive-characters: 3
   caps:
     enabled: true
@@ -85,11 +97,8 @@ filter:
       - "پفیوز"
   advertisement:
     enabled: true
-    # Blocks numeric IPv4 addresses such as 123.45.67.89:25565.
     block-ip: true
-    # Blocks domain names such as example.com or play.example.net.
     block-domains: true
-    # Add/remove known server names here. Matching is case-insensitive.
     server-names:
       - "MadCraft"
       - "TrexMine"
