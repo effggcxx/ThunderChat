@@ -37,7 +37,6 @@ filter:
   flood:
     enabled: true
     # A message is considered flood when the same character appears this many times consecutively.
-    # Example with 3: "hellooo" or "!!!!!" is blocked.
     max-consecutive-characters: 3
   caps:
     enabled: true
@@ -45,8 +44,6 @@ filter:
     min-length-to-check: 8
   swear:
     enabled: true
-    # Add or remove words freely. Matching is case-insensitive.
-    # English words use word boundaries; Persian/non-Latin words also match inside compounds.
     words:
       - "fuck"
       - "fucking"
@@ -86,6 +83,16 @@ filter:
       - "عوضی"
       - "الدنگ"
       - "پفیوز"
+  advertisement:
+    enabled: true
+    # Blocks numeric IPv4 addresses such as 123.45.67.89:25565.
+    block-ip: true
+    # Blocks domain names such as example.com or play.example.net.
+    block-domains: true
+    # Add/remove known server names here. Matching is case-insensitive.
+    server-names:
+      - "MadCraft"
+      - "TrexMine"
   words:
     enabled: true
     blocked: []
