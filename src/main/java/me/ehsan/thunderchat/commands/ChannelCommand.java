@@ -1,7 +1,7 @@
 package me.ehsan.thunderchat.commands;
 
 import me.ehsan.thunderchat.ThunderChat;
-import me.ehsan.thunderchat.channels.ChannelManager.Channel;
+import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -23,26 +23,29 @@ public class ChannelCommand implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            Channel active = plugin.getChannelManager().getActiveChannel(player);
-            player.sendMessage(ChatColor.GRAY + "Current channel: " + ChatColor.YELLOW + active.getId());
-            player.sendMessage(ChatColor.GRAY + "Available: " + ChatColor.YELLOW + "local" + ChatColor.GRAY + ", "
-                    + ChatColor.YELLOW + "donator" + ChatColor.GRAY + ", " + ChatColor.YELLOW + "staff");
+            Channel active = plugin.getGlobalChatManager().get(player);
+            player.sendMessage(ChatColor.GRAY + "Current channel: " + ChatColor.YELLOW + active.id());
+            player.sendMessage(ChatColor.GRAY + "Available channels:");
+            for (Channel channel : plugin.getGlobalChatManager().getAvailableChannels(player)) {
+                String state = plugin.getGlobalChatManager().isHidden(player, channel) ? ChatColor.DARK_GRAY + " (hidden)" : "";
+                player.sendMessage(ChatColor.GRAY + " - " + ChatColor.YELLOW + channel.id() + state);
+            }
             return true;
         }
 
         Channel channel = Channel.fromId(args[0]);
         if (channel == null) {
-            player.sendMessage(ChatColor.RED + "Unknown channel. Use: local, donator, staff.");
+            player.sendMessage(ChatColor.RED + "Unknown channel.");
             return true;
         }
 
-        if (!plugin.getChannelManager().canUse(player, channel)) {
+        if (!plugin.getGlobalChatManager().canUse(player, channel)) {
             player.sendMessage(ChatColor.RED + "You don't have permission to use that channel.");
             return true;
         }
 
-        plugin.getChannelManager().setActiveChannel(player, channel);
-        player.sendMessage(ChatColor.GREEN + "Chat channel set to " + ChatColor.YELLOW + channel.getId() + ChatColor.GREEN + ".");
+        plugin.getGlobalChatManager().set(player, channel);
+        player.sendMessage(ChatColor.GREEN + "Chat channel set to " + ChatColor.YELLOW + channel.id() + ChatColor.GREEN + ".");
         return true;
     }
 }
