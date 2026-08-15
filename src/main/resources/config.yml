@@ -140,10 +140,9 @@ mentions:
   highlight-color: "&e"
 spy:
   enabled: true
-  network: true
-  # Spy sections: chat, commands, private-messages
-  # Auto-enable runs only for staff with thunderchat.spy.autoenable on first join.
   autoenable: true
-  format: "&8[&cSPY&r&8] &7{type}&r &8| &7{channel}&r &8| &f{player}&r &8| &f{message}"
+  # {type} remains available for custom formats. It is intentionally omitted from the defaults.
+  private-message-format: "&8[&7SPY&r&8] &7{player}&r &8---> &7{target}&r &8: &7{message}"
+  command-format: "&8[&7SPY&r&8] &7{player}&r &8: &7{message}"
 storage:
   type: yaml
