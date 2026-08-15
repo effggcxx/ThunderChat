@@ -58,9 +58,7 @@ public final class GlobalChatManager implements PluginMessageListener {
 
     public static GlobalChatManager getInstance() { return instance; }
 
-    public Channel get(Player player) {
-        return active.getOrDefault(player.getUniqueId(), Channel.LOCAL);
-    }
+    public Channel get(Player player) { return active.getOrDefault(player.getUniqueId(), Channel.LOCAL); }
 
     public void set(Player player, Channel channel) {
         active.put(player.getUniqueId(), channel == null ? Channel.LOCAL : channel);
@@ -83,8 +81,7 @@ public final class GlobalChatManager implements PluginMessageListener {
 
     public void setHidden(Player player, Channel channel, boolean value) {
         EnumSet<Channel> channels = hidden.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Channel.class));
-        if (value) channels.add(channel);
-        else channels.remove(channel);
+        if (value) channels.add(channel); else channels.remove(channel);
         if (get(player) == channel && value) set(player, Channel.LOCAL);
         if (channels.isEmpty()) hidden.remove(player.getUniqueId());
     }
@@ -98,15 +95,11 @@ public final class GlobalChatManager implements PluginMessageListener {
         set(player, Channel.LOCAL);
     }
 
-    public void showAll(Player player) {
-        hidden.remove(player.getUniqueId());
-    }
+    public void showAll(Player player) { hidden.remove(player.getUniqueId()); }
 
     public List<Channel> getAvailableChannels(Player player) {
         List<Channel> result = new ArrayList<>();
-        for (Channel channel : Channel.values()) {
-            if (canUse(player, channel)) result.add(channel);
-        }
+        for (Channel channel : Channel.values()) if (canUse(player, channel)) result.add(channel);
         return result;
     }
 
@@ -123,8 +116,7 @@ public final class GlobalChatManager implements PluginMessageListener {
 
         String server = plugin.getPluginConfig().getString("network.server-name", "server");
         String prefix = prefix(player);
-        String format = getFormat(channel);
-        String output = format(format, channel, server, prefix, player.getName(), text, player);
+        String output = format(getFormat(channel), channel, server, prefix, player.getName(), text, player);
 
         for (Player recipient : Bukkit.getOnlinePlayers()) {
             if (channel == Channel.LOCAL) {
@@ -134,7 +126,7 @@ public final class GlobalChatManager implements PluginMessageListener {
             }
         }
 
-        if (channel.isNetwork()) forwardChat(player, channel, prefix, text, server);
+        if (channel.isNetwork()) forwardChat(player, channel, output);
     }
 
     public void clearChat(Channel channel, Player source) {
@@ -159,20 +151,11 @@ public final class GlobalChatManager implements PluginMessageListener {
         source.sendMessage(ChatColor.GREEN + "Cleared " + channel.display.toLowerCase(Locale.ROOT) + ".");
     }
 
-    /**
-     * Channel-specific format. Every format may contain built-ins and any PAPI placeholder.
-     * Built-ins: {channel}, {server}, {prefix}, {player}, {message}.
-     */
     private String getFormat(Channel channel) {
-        String path = "format.channels." + channel.id;
-        String configured = plugin.getPluginConfig().getString(path);
+        String configured = plugin.getPluginConfig().getString("format.channels." + channel.id);
         if (configured != null && !configured.isEmpty()) return configured;
-
-        if (channel == Channel.LOCAL) {
-            return plugin.getPluginConfig().getString("format.normal", "{prefix}&r{player}&7: &f{message}");
-        }
-        return plugin.getPluginConfig().getString("format.global",
-                "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}");
+        if (channel == Channel.LOCAL) return plugin.getPluginConfig().getString("format.normal", "{prefix}&r{player}&7: &f{message}");
+        return plugin.getPluginConfig().getString("format.global", "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}");
     }
 
     private String format(String format, Channel channel, String server, String prefix,
@@ -183,7 +166,6 @@ public final class GlobalChatManager implements PluginMessageListener {
                 .replace("{prefix}", prefix)
                 .replace("{player}", player)
                 .replace("{message}", message);
-
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             resolved = PlaceholderAPI.setPlaceholders(placeholderPlayer, resolved);
         }
@@ -196,17 +178,14 @@ public final class GlobalChatManager implements PluginMessageListener {
         return PlaceholderAPI.setPlaceholders(player, template);
     }
 
-    private void forwardChat(Player player, Channel channel, String prefix, String message, String server) {
+    private void forwardChat(Player player, Channel channel, String resolvedOutput) {
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             DataOutputStream data = new DataOutputStream(bytes);
             data.writeInt(3);
             data.writeUTF("CHAT");
             data.writeUTF(channel.id);
-            data.writeUTF(player.getName());
-            data.writeUTF(server);
-            data.writeUTF(prefix);
-            data.writeUTF(message);
+            data.writeUTF(resolvedOutput);
             data.flush();
             sendNetwork(player, bytes.toByteArray());
         } catch (IOException e) {
@@ -270,13 +249,7 @@ public final class GlobalChatManager implements PluginMessageListener {
             if (type != 3 || !"CHAT".equals(kind)) return;
             Channel chatChannel = Channel.fromId(input.readUTF());
             if (chatChannel == null || chatChannel == Channel.LOCAL) return;
-            String playerName = input.readUTF();
-            String server = input.readUTF();
-            String prefix = input.readUTF();
-            String message = input.readUTF();
-            String format = getFormat(chatChannel);
-            String output = format(format, chatChannel, server, prefix, playerName, message, source);
-
+            String output = input.readUTF();
             for (Player recipient : Bukkit.getOnlinePlayers()) {
                 if (canUse(recipient, chatChannel) && !isHidden(recipient, chatChannel)
                         && !plugin.getMuteManager().isMuted(recipient, chatChannel.id)) {
