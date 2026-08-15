@@ -1,5 +1,6 @@
 package me.ehsan.thunderchat;
 
+import me.ehsan.thunderchat.alerts.AlertManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import me.ehsan.thunderchat.commands.ChannelCommand;
@@ -24,6 +25,7 @@ public final class ThunderChat extends JavaPlugin {
     private static ThunderChat instance;
     private GlobalChatManager globalChatManager;
     private FilterManager filterManager;
+    private AlertManager alertManager;
     private CapsManager capsManager;
     private PrivateMessageManager messageManager;
     private IgnoreManager ignoreManager;
@@ -36,6 +38,7 @@ public final class ThunderChat extends JavaPlugin {
         loadPluginConfig();
         this.muteManager = new MuteManager(this);
         this.globalChatManager = new GlobalChatManager(this);
+        this.alertManager = new AlertManager(this);
         this.filterManager = new FilterManager(this);
         this.capsManager = new CapsManager(this);
         this.messageManager = new PrivateMessageManager(this);
@@ -85,6 +88,7 @@ public final class ThunderChat extends JavaPlugin {
     public static ThunderChat getInstance() { return instance; }
     public GlobalChatManager getGlobalChatManager() { return globalChatManager; }
     public FilterManager getFilterManager() { return filterManager; }
+    public AlertManager getAlertManager() { return alertManager; }
     public CapsManager getCapsManager() { return capsManager; }
     public PrivateMessageManager getMessageManager() { return messageManager; }
     public IgnoreManager getIgnoreManager() { return ignoreManager; }
