@@ -26,7 +26,7 @@ commands:
     aliases: [ch]
   clearchat:
     description: Clear local or global chat
-    usage: /clearchat [global|staff|donator|admin|highrank]
+    usage: /clearchat [local|global|staff|donator|admin|highrank]
     aliases: [cc]
   staffchat:
     description: Toggle staff chat
@@ -41,11 +41,8 @@ commands:
     description: Toggle high-rank chat
     aliases: [hc]
   chat:
-    description: Mute or unmute global chat
-    usage: /chat <mute|unmute> [player]
-  globalchat:
-    description: Mute or unmute global chat
-    usage: /globalchat <mute|unmute> [player]
+    description: Manage chat, defaulting to local chat
+    usage: /chat <clear|mute|unmute> [channel] [player]
   channelmutelist:
     description: List globally muted channels and muted players per channel
     usage: /channelmutelist [page]
@@ -141,6 +138,9 @@ permissions:
     default: op
   thunderchat.bypass.mute.global:
     description: Bypass global chat mutes
+    default: op
+  thunderchat.bypass.mute.local:
+    description: Bypass local gamemode chat mutes
     default: op
   thunderchat.bypass.mute.staff:
     description: Bypass staff chat mutes
