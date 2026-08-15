@@ -52,6 +52,9 @@ commands:
     description: List globally muted channels and muted players per channel
     usage: /channelmutelist [page]
     aliases: [cml, mutelist]
+  spy:
+    description: Monitor chat, commands and private messages
+    usage: /spy <on|off|status|toggle> [chat|commands|private-messages]
   thunderchat:
     description: Reload config / admin subcommands
     usage: /thunderchat <reload>
@@ -67,6 +70,15 @@ permissions:
   thunderchat.ignore:
     description: Allows using the ignore system
     default: true
+  thunderchat.command.spy:
+    description: Allows using the /spy command
+    default: op
+  thunderchat.spy.autoenable:
+    description: Automatically enable all spy sections on first join
+    default: op
+  thunderchat.bypass.spy:
+    description: Prevents this player's chat, commands and private messages from being spied on
+    default: false
   thunderchat.clearchat.*:
     description: Allows clearing every ThunderChat channel
     default: op
