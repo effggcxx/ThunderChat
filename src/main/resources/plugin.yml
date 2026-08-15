@@ -155,7 +155,7 @@ permissions:
     description: Bypass high-rank chat mutes
     default: op
   thunderchat.bypass.filter:
-    description: Bypass spam/caps/flood/word filter
+    description: Bypass spam/caps/flood/word/advertisement filters
     default: op
   thunderchat.bypass.spam:
     description: Bypass spam filter only
@@ -168,6 +168,9 @@ permissions:
     default: op
   thunderchat.bypass.swear:
     description: Bypass the swear-word filter
+    default: op
+  thunderchat.bypass.advertisement:
+    description: Bypass the anti-advertisement filter
     default: op
   thunderchat.channelmutelist:
     description: View the list of globally muted channels and muted players
