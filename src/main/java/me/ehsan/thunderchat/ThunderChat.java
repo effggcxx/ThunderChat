@@ -1,6 +1,5 @@
 package me.ehsan.thunderchat;
 
-import me.ehsan.thunderchat.channels.ChannelManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import me.ehsan.thunderchat.commands.ChannelCommand;
@@ -23,7 +22,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ThunderChat extends JavaPlugin {
     private static ThunderChat instance;
-    private ChannelManager channelManager;
     private GlobalChatManager globalChatManager;
     private FilterManager filterManager;
     private CapsManager capsManager;
@@ -37,12 +35,12 @@ public final class ThunderChat extends JavaPlugin {
         instance = this;
         loadPluginConfig();
         this.muteManager = new MuteManager(this);
-        this.channelManager = new ChannelManager(this);
         this.globalChatManager = new GlobalChatManager(this);
         this.filterManager = new FilterManager(this);
         this.capsManager = new CapsManager(this);
         this.messageManager = new PrivateMessageManager(this);
         this.ignoreManager = new IgnoreManager(this);
+
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
         getCommand("msg").setExecutor(new MsgCommand(this));
         getCommand("reply").setExecutor(new ReplyCommand(this));
@@ -67,7 +65,11 @@ public final class ThunderChat extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled.");
     }
 
-    public void loadPluginConfig() { saveDefaultConfig(); reloadConfig(); this.config = getConfig(); }
+    public void loadPluginConfig() {
+        saveDefaultConfig();
+        reloadConfig();
+        this.config = getConfig();
+    }
 
     private void printEnableBanner() {
         String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET;
@@ -80,7 +82,6 @@ public final class ThunderChat extends JavaPlugin {
     }
 
     public static ThunderChat getInstance() { return instance; }
-    public ChannelManager getChannelManager() { return channelManager; }
     public GlobalChatManager getGlobalChatManager() { return globalChatManager; }
     public FilterManager getFilterManager() { return filterManager; }
     public CapsManager getCapsManager() { return capsManager; }
