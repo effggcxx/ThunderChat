@@ -18,21 +18,16 @@ public class ChatListener implements Listener {
         Player player = event.getPlayer();
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
         if (plugin.getFilterManager().shouldBlock(player, message)) {
-            plugin.getSpyManager().spyChat(player, plugin.getGlobalChatManager().get(player).id(), message);
             event.setCancelled(true);
             return;
         }
         if (!plugin.getCapsManager().canBypass(player) && plugin.getCapsManager().isAllCaps(message)) {
-            plugin.getSpyManager().spyChat(player, plugin.getGlobalChatManager().get(player).id(), message);
             message = plugin.getCapsManager().normalize(message);
             plugin.getCapsManager().notifyPlayer(player);
         }
         final String finalMessage = message;
-        final String channel = plugin.getGlobalChatManager().get(player).id();
         event.setCancelled(true);
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            plugin.getGlobalChatManager().send(player, finalMessage);
-            plugin.getSpyManager().spyChat(player, channel, finalMessage);
-        });
+        plugin.getServer().getScheduler().runTask(plugin, () ->
+                plugin.getGlobalChatManager().send(player, finalMessage));
     }
 }
