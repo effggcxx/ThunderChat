@@ -10,6 +10,7 @@ import me.ehsan.thunderchat.commands.ClearChatCommand;
 import me.ehsan.thunderchat.commands.IgnoreCommand;
 import me.ehsan.thunderchat.commands.MsgCommand;
 import me.ehsan.thunderchat.commands.ReplyCommand;
+import me.ehsan.thunderchat.commands.SpyCommand;
 import me.ehsan.thunderchat.commands.ThunderChatCommand;
 import me.ehsan.thunderchat.filter.CapsManager;
 import me.ehsan.thunderchat.filter.FilterManager;
@@ -17,6 +18,8 @@ import me.ehsan.thunderchat.listeners.ChatListener;
 import me.ehsan.thunderchat.messaging.IgnoreManager;
 import me.ehsan.thunderchat.messaging.PrivateMessageManager;
 import me.ehsan.thunderchat.muting.MuteManager;
+import me.ehsan.thunderchat.spy.SpyListener;
+import me.ehsan.thunderchat.spy.SpyManager;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,6 +33,7 @@ public final class ThunderChat extends JavaPlugin {
     private PrivateMessageManager messageManager;
     private IgnoreManager ignoreManager;
     private MuteManager muteManager;
+    private SpyManager spyManager;
     private FileConfiguration config;
 
     @Override
@@ -43,8 +47,10 @@ public final class ThunderChat extends JavaPlugin {
         this.capsManager = new CapsManager(this);
         this.messageManager = new PrivateMessageManager(this);
         this.ignoreManager = new IgnoreManager(this);
+        this.spyManager = new SpyManager(this);
 
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
+        getServer().getPluginManager().registerEvents(new SpyListener(this), this);
         getCommand("msg").setExecutor(new MsgCommand(this));
         getCommand("reply").setExecutor(new ReplyCommand(this));
         IgnoreCommand ignoreCmd = new IgnoreCommand(this);
@@ -60,6 +66,7 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
         getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK));
         getCommand("gc").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
+        getCommand("spy").setExecutor(new SpyCommand(this));
         printEnableBanner();
     }
 
@@ -69,11 +76,7 @@ public final class ThunderChat extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled.");
     }
 
-    public void loadPluginConfig() {
-        saveDefaultConfig();
-        reloadConfig();
-        this.config = getConfig();
-    }
+    public void loadPluginConfig() { saveDefaultConfig(); reloadConfig(); this.config = getConfig(); }
 
     private void printEnableBanner() {
         String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET;
@@ -93,5 +96,6 @@ public final class ThunderChat extends JavaPlugin {
     public PrivateMessageManager getMessageManager() { return messageManager; }
     public IgnoreManager getIgnoreManager() { return ignoreManager; }
     public MuteManager getMuteManager() { return muteManager; }
+    public SpyManager getSpyManager() { return spyManager; }
     public FileConfiguration getPluginConfig() { return config; }
 }
