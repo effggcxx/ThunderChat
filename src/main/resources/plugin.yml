@@ -155,10 +155,13 @@ permissions:
     description: Bypass high-rank chat mutes
     default: op
   thunderchat.bypass.filter:
-    description: Bypass spam/caps/word filter
+    description: Bypass spam/caps/flood/word filter
     default: op
   thunderchat.bypass.spam:
     description: Bypass spam filter only
+    default: op
+  thunderchat.bypass.flood:
+    description: Bypass anti-flood filter
     default: op
   thunderchat.bypass.caps:
     description: Bypass anti-caps normalization
