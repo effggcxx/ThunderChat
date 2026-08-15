@@ -34,6 +34,11 @@ filter:
     score-threshold: 5
     max-repeated-messages: 3
     cooldown-seconds: 2
+  flood:
+    enabled: true
+    # A message is considered flood when the same character appears this many times consecutively.
+    # Example with 3: "hellooo" or "!!!!!" is blocked.
+    max-consecutive-characters: 3
   caps:
     enabled: true
     max-percentage: 70
