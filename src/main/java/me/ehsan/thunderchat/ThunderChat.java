@@ -56,7 +56,7 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
         getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
         getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK));
-        getCommand("globalchat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
+        getCommand("gc").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
         printEnableBanner();
     }
 
