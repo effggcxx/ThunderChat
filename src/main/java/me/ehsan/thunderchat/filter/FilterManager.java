@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
- * Chat filters: spam, caps, blocked words, and swear words.
+ * Chat filters: spam, flood, caps, blocked words, and swear words.
  */
 public class FilterManager {
     private final ThunderChat plugin;
@@ -39,6 +39,11 @@ public class FilterManager {
 
         if (isSpam(player, message)) {
             player.sendMessage(ChatColor.RED + "Please don't spam the chat.");
+            return true;
+        }
+
+        if (isFlood(message) && !player.hasPermission("thunderchat.bypass.flood")) {
+            player.sendMessage(ChatColor.RED + "Please don't flood the chat with repeated characters.");
             return true;
         }
 
@@ -93,6 +98,32 @@ public class FilterManager {
         return false;
     }
 
+    /**
+     * Detects a run of the same character repeated at least the configured
+     * number of times, e.g. "helloooo" or "!!!!!".
+     */
+    public boolean isFlood(String message) {
+        if (!plugin.getPluginConfig().getBoolean("filter.flood.enabled", true)) return false;
+        if (message == null || message.isEmpty()) return false;
+
+        int threshold = plugin.getPluginConfig().getInt("filter.flood.max-consecutive-characters", 3);
+        threshold = Math.max(2, threshold);
+
+        int run = 1;
+        char previous = message.charAt(0);
+        for (int i = 1; i < message.length(); i++) {
+            char current = message.charAt(i);
+            if (current == previous) {
+                run++;
+                if (run >= threshold) return true;
+            } else {
+                previous = current;
+                run = 1;
+            }
+        }
+        return false;
+    }
+
     public boolean isExcessiveCaps(String message) {
         int minLength = plugin.getPluginConfig().getInt("filter.caps.min-length-to-check", 8);
         if (message.length() < minLength) return false;
@@ -125,13 +156,10 @@ public class FilterManager {
             String candidate = normalizeForFilter(word).trim();
             if (candidate.isEmpty()) continue;
 
-            // English/ASCII words use boundaries so words such as "class" don't match "ass".
             if (candidate.matches("[a-z0-9_ ]+")) {
                 String regex = "(?<![a-z0-9_])" + Pattern.quote(candidate) + "(?![a-z0-9_])";
                 if (Pattern.compile(regex).matcher(normalized).find()) return true;
             } else if (normalized.contains(candidate)) {
-                // Persian and other non-Latin words are checked as substrings so compounds
-                // such as Persian swear-word combinations are still caught.
                 return true;
             }
         }
