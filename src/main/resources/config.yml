@@ -9,11 +9,8 @@
 #   {message}  - chat message
 #
 # Any PlaceholderAPI placeholder can also be used directly in a channel format.
-# Example: %luckperms_prefix%, %player_ping%, %world_name%, etc.
-# PlaceholderAPI must provide the requested expansion.
 format:
   prefix-placeholder: "%luckperms_prefix% "
-  # Kept for backwards compatibility; channel-specific values below take priority.
   normal: "{prefix}&r{player}&7: &f{message}"
   global: "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
   channels:
@@ -134,6 +131,20 @@ filter:
   words:
     enabled: true
     blocked: []
+alerts:
+  enabled: true
+  broadcast-network: true
+  # Set any individual alert type to false to stop broadcasting that alert.
+  types:
+    spam: true
+    flood: true
+    caps: true
+    swear: true
+    advertisement: true
+    words: true
+  # Available placeholders: {type}, {server}, {player}, {message}
+  # &r is used deliberately between logical sections to prevent color bleed.
+  format: "&c&l[ALERT]&r &c{type}&r &8| &7{server}&r &8| &f{player}&r &8| &7{message}"
 mentions:
   enabled: true
   sound: ENTITY_EXPERIENCE_ORB_PICKUP
