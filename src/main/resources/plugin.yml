@@ -28,6 +28,9 @@ commands:
     description: Clear local or global chat
     usage: /clearchat [local|global|staff|donator|admin|highrank]
     aliases: [cc]
+  chathide:
+    description: Toggle visibility of chat channels for yourself
+    usage: /chathide [local|global|staff|donator|admin|highrank|all]
   staffchat:
     description: Toggle staff chat
     aliases: [sc]
@@ -177,4 +180,36 @@ permissions:
     default: op
   thunderchat.mention:
     description: Allows triggering @mentions
+    default: true
+  thunderchat.chathide.*:
+    description: Allows hiding every available chat channel for yourself
+    default: op
+    children:
+      thunderchat.chathide.local: true
+      thunderchat.chathide.global: true
+      thunderchat.chathide.staff: true
+      thunderchat.chathide.donator: true
+      thunderchat.chathide.admin: true
+      thunderchat.chathide.highrank: true
+      thunderchat.chathide.all: true
+  thunderchat.chathide.local:
+    description: Allows hiding local gamemode chat for yourself
+    default: true
+  thunderchat.chathide.global:
+    description: Allows hiding global chat for yourself
+    default: true
+  thunderchat.chathide.staff:
+    description: Allows hiding staff chat for yourself
+    default: true
+  thunderchat.chathide.donator:
+    description: Allows hiding donator chat for yourself
+    default: true
+  thunderchat.chathide.admin:
+    description: Allows hiding admin chat for yourself
+    default: true
+  thunderchat.chathide.highrank:
+    description: Allows hiding high-rank chat for yourself
+    default: true
+  thunderchat.chathide.all:
+    description: Allows hiding all available chat channels for yourself
     default: true
