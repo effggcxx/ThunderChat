@@ -5,6 +5,7 @@ import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import me.ehsan.thunderchat.commands.ChannelCommand;
 import me.ehsan.thunderchat.commands.ChatChannelCommand;
+import me.ehsan.thunderchat.commands.ChatHideCommand;
 import me.ehsan.thunderchat.commands.ClearChatCommand;
 import me.ehsan.thunderchat.commands.IgnoreCommand;
 import me.ehsan.thunderchat.commands.MsgCommand;
@@ -51,8 +52,8 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("channel").setExecutor(new ChannelCommand(this));
         getCommand("clearchat").setExecutor(new ClearChatCommand(this));
         getCommand("thunderchat").setExecutor(new ThunderChatCommand(this));
-        // /chat is the single general chat-management command. It defaults to local chat.
-        getCommand("chat").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL));
+        getCommand("chat").setExecutor(new ChatChannelCommand(this, null));
+        getCommand("chathide").setExecutor(new ChatHideCommand(this));
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF));
         getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
         getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN));
