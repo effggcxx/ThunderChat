@@ -12,13 +12,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
- * Chat filters: spam, flood, caps, blocked words, and swear words.
+ * Chat filters: spam, flood, caps, blocked words, swear words, and advertisements.
  */
 public class FilterManager {
     private final ThunderChat plugin;
     private final Map<UUID, String> lastMessage = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastMessageTime = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> repeatStreak = new ConcurrentHashMap<>();
+
+    private static final Pattern IPV4_PATTERN = Pattern.compile(
+            "(?<![0-9])(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?::[0-9]{1,5})?(?![0-9])");
+    private static final Pattern SERVER_DOMAIN_PATTERN = Pattern.compile(
+            "(?i)(?<![a-z0-9_-])(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})(?::[0-9]{1,5})?(?![a-z0-9_-])");
 
     public FilterManager(ThunderChat plugin) {
         this.plugin = plugin;
@@ -54,6 +59,11 @@ public class FilterManager {
 
         if (containsSwearWord(message) && !player.hasPermission("thunderchat.bypass.swear")) {
             player.sendMessage(ChatColor.RED + "Please don't use swear words in chat.");
+            return true;
+        }
+
+        if (containsAdvertisement(message) && !player.hasPermission("thunderchat.bypass.advertisement")) {
+            player.sendMessage(ChatColor.RED + "Please don't advertise other Minecraft servers in chat.");
             return true;
         }
 
@@ -98,10 +108,6 @@ public class FilterManager {
         return false;
     }
 
-    /**
-     * Detects a run of the same character repeated at least the configured
-     * number of times, e.g. "helloooo" or "!!!!!".
-     */
     public boolean isFlood(String message) {
         if (!plugin.getPluginConfig().getBoolean("filter.flood.enabled", true)) return false;
         if (message == null || message.isEmpty()) return false;
@@ -125,6 +131,7 @@ public class FilterManager {
     }
 
     public boolean isExcessiveCaps(String message) {
+        if (!plugin.getPluginConfig().getBoolean("filter.caps.enabled", true)) return false;
         int minLength = plugin.getPluginConfig().getInt("filter.caps.min-length-to-check", 8);
         if (message.length() < minLength) return false;
 
@@ -143,7 +150,6 @@ public class FilterManager {
         return ((double) upper / letters) * 100.0 >= maxPct;
     }
 
-    /** Returns true when a configured swear word occurs in the message. */
     public boolean containsSwearWord(String message) {
         if (!plugin.getPluginConfig().getBoolean("filter.swear.enabled", true)) return false;
 
@@ -163,6 +169,37 @@ public class FilterManager {
                 return true;
             }
         }
+        return false;
+    }
+
+    /**
+     * Blocks common Minecraft server advertisements. Detection is intentionally
+     * conservative around domains: it catches numeric IPv4 addresses, domain
+     * names with a real TLD, and configurable server names from the config.
+     */
+    public boolean containsAdvertisement(String message) {
+        if (!plugin.getPluginConfig().getBoolean("filter.advertisement.enabled", true)) return false;
+        if (message == null || message.isBlank()) return false;
+
+        String normalized = normalizeForFilter(message);
+
+        if (plugin.getPluginConfig().getBoolean("filter.advertisement.block-ip", true)
+                && IPV4_PATTERN.matcher(normalized).find()) {
+            return true;
+        }
+
+        if (plugin.getPluginConfig().getBoolean("filter.advertisement.block-domains", true)
+                && SERVER_DOMAIN_PATTERN.matcher(normalized).find()) {
+            return true;
+        }
+
+        List<String> serverNames = plugin.getPluginConfig().getStringList("filter.advertisement.server-names");
+        for (String name : serverNames) {
+            if (name == null || name.isBlank()) continue;
+            String candidate = normalizeForFilter(name).trim();
+            if (!candidate.isEmpty() && normalized.contains(candidate)) return true;
+        }
+
         return false;
     }
 
