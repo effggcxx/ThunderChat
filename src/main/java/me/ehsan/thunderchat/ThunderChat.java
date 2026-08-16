@@ -30,6 +30,8 @@ import me.ehsan.thunderchat.spy.SpyManager;
 import org.bukkit.ChatColor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ThunderChat extends JavaPlugin {
@@ -53,6 +55,7 @@ public final class ThunderChat extends JavaPlugin {
         this.muteManager = new MuteManager(this); this.globalChatManager = new GlobalChatManager(this); this.alertManager = new AlertManager(this);
         this.filterManager = new FilterManager(this); this.capsManager = new CapsManager(this); this.messageManager = new PrivateMessageManager(this);
         this.ignoreManager = new IgnoreManager(this); this.spyManager = new SpyManager(this); this.chatColorManager = new ChatColorManager(this);
+        registerChatColorPermissions();
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
         getServer().getPluginManager().registerEvents(new SpyListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerStateListener(this), this);
@@ -72,6 +75,18 @@ public final class ThunderChat extends JavaPlugin {
         String[] completable = {"msg", "ignore", "unignore", "channel", "channelmutelist", "clearchat", "chathide", "chat", "spy", "thunderchat", "chatcolor"};
         for (String commandName : completable) { PluginCommand command = getCommand(commandName); if (command != null) command.setTabCompleter(completer); }
         printEnableBanner();
+    }
+
+    private void registerChatColorPermissions() {
+        registerPermission("thunderchat.chatcolor.color.*", "Allows every Chat Color color", PermissionDefault.FALSE);
+        registerPermission("thunderchat.chatcolor.gradient.*", "Allows every Chat Color gradient", PermissionDefault.FALSE);
+        registerPermission("thunderchat.chatcolor.style.*", "Allows every Chat Color style", PermissionDefault.FALSE);
+        for (String color : ChatColorManager.COLORS) registerPermission("thunderchat.chatcolor.color." + color, "Allows the " + color + " chat color", PermissionDefault.FALSE);
+        for (String gradient : ChatColorManager.GRADIENTS) registerPermission("thunderchat.chatcolor.gradient." + gradient, "Allows the " + gradient + " chat gradient", PermissionDefault.FALSE);
+        for (String style : ChatColorManager.STYLES) registerPermission("thunderchat.chatcolor.style." + style, "Allows the " + style + " chat style", PermissionDefault.FALSE);
+    }
+    private void registerPermission(String name, String description, PermissionDefault defaultValue) {
+        if (getServer().getPluginManager().getPermission(name) == null) getServer().getPluginManager().addPermission(new Permission(name, description, defaultValue));
     }
 
     @Override public void onDisable() { if (muteManager != null) muteManager.save(); if (ignoreManager != null) ignoreManager.save(); if (spyManager != null) spyManager.save(); getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[ThunderChat] " + ChatColor.RED + "Disabled."); }
