@@ -12,8 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
- * Chat filters: spam, flood, caps detection, blocked words, swear words, and advertisements.
- * Caps are deliberately handled as normalization by CapsManager rather than as a hard block.
+ * Chat filters: spam, flood, caps normalization, blocked words, swear words, and advertisements.
+ * Caps are handled by CapsManager as normalization rather than as a hard block.
  */
 public class FilterManager {
     private final ThunderChat plugin;
@@ -122,20 +122,6 @@ public class FilterManager {
             } else { previous = current; run = 1; }
         }
         return false;
-    }
-
-    public boolean isExcessiveCaps(String message) {
-        if (!plugin.getPluginConfig().getBoolean("filter.caps.enabled", true)) return false;
-        int minLength = plugin.getPluginConfig().getInt("filter.caps.min-length-to-check", 8);
-        if (message.length() < minLength) return false;
-        int letters = 0, upper = 0;
-        for (int i = 0; i < message.length(); i++) {
-            char c = message.charAt(i);
-            if (Character.isLetter(c)) { letters++; if (Character.isUpperCase(c)) upper++; }
-        }
-        if (letters == 0) return false;
-        double maxPct = plugin.getPluginConfig().getDouble("filter.caps.max-percentage", 70);
-        return ((double) upper / letters) * 100.0 >= maxPct;
     }
 
     public boolean containsSwearWord(String message) {
