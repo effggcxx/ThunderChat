@@ -47,12 +47,14 @@ public final class ChatColorManager {
         String gradient = getGradient(player);
         if (gradient != null) tags.append('<').append(gradientTag(gradient)).append('>');
         else if (color != null && !"white".equalsIgnoreCase(color)) tags.append('<').append(color).append('>');
-        for (Style style : styles.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Style.class))) tags.append('<').append(styleTag(style)).append('>');
+        EnumSet<Style> selectedStyles = styles.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Style.class));
+        for (Style style : selectedStyles) tags.append('<').append(styleTag(style)).append('>');
         if (tags.isEmpty()) return message;
         StringBuilder closing = new StringBuilder();
-        List<Style> selected = new ArrayList<>(styles.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Style.class)));
+        List<Style> selected = new ArrayList<>(selectedStyles);
         for (int i = selected.size() - 1; i >= 0; i--) closing.append("</").append(styleTag(selected.get(i))).append('>');
-        if (gradient != null) closing.append("</gradient>"); else if (color != null && !"white".equalsIgnoreCase(color)) closing.append("</").append(color).append('>');
+        if (gradient != null) closing.append("rainbow".equals(gradientTag(gradient)) ? "</rainbow>" : "</gradient>");
+        else if (color != null && !"white".equalsIgnoreCase(color)) closing.append("</").append(color).append('>');
         Component component = miniMessage.deserialize(tags + miniMessage.escapeTags(message) + closing);
         return legacy.serialize(component);
     }
