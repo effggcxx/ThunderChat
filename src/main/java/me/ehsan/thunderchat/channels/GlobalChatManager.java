@@ -2,18 +2,22 @@ package me.ehsan.thunderchat.channels;
 
 import me.clip.placeholderapi.PlaceholderAPI;
 import me.ehsan.thunderchat.ThunderChat;
-import me.ehsan.thunderchat.alerts.AlertManager;
 import me.ehsan.thunderchat.commands.ClearChatCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /** Unified channel state for local and network chat. */
 public final class GlobalChatManager implements PluginMessageListener {
+    private static final int PROTOCOL_VERSION = 1;
+    private enum PacketKind { CHAT, CLEAR, ALERT }
+
     public enum Channel {
         LOCAL("local", "LOCAL CHAT", false), GLOBAL("global", "GLOBAL CHAT", true),
         DONATOR("donator", "DONATOR CHAT", true), STAFF("staff", "STAFF CHAT", true),
@@ -54,21 +58,64 @@ public final class GlobalChatManager implements PluginMessageListener {
     public void showAll(Player player) { hidden.remove(player.getUniqueId()); }
     public List<Channel> getAvailableChannels(Player player) { List<Channel> result = new ArrayList<>(); for (Channel c : Channel.values()) if (canUse(player, c)) result.add(c); return result; }
 
+    public void clearPlayer(UUID id) {
+        active.remove(id);
+        hidden.remove(id);
+    }
+
     public void send(Player player, String text) {
         Channel channel = get(player);
         if (!canUse(player, channel) || isHidden(player, channel)) { set(player, Channel.LOCAL); channel = Channel.LOCAL; }
         if (plugin.getMuteManager().isMuted(player, channel.id)) { player.sendMessage(ChatColor.RED + "That chat is currently muted for you."); return; }
+
         String server = plugin.getPluginConfig().getString("network.server-name", "server");
         String prefix = prefix(player);
-        String output = format(getFormat(channel), channel, server, prefix, player.getName(), text, player);
+        String preparedMessage = applyMentionHighlight(player, text);
+        String output = format(getFormat(channel), channel, server, prefix, player.getName(), preparedMessage, player);
+
         for (Player recipient : Bukkit.getOnlinePlayers()) {
-            if (channel == Channel.LOCAL) { if (!isHidden(recipient, Channel.LOCAL)) recipient.sendMessage(output); }
-            else if (canUse(recipient, channel) && !isHidden(recipient, channel)) recipient.sendMessage(output);
+            if (shouldReceive(recipient, player.getUniqueId(), channel)) {
+                recipient.sendMessage(output);
+                playMentionSoundIfNeeded(recipient, text, player);
+            }
         }
-        if (channel.isNetwork()) forwardChat(player, channel, output);
+        if (channel.isNetwork()) forwardChat(player, channel, player.getUniqueId(), output);
     }
 
-    /** Sends a filter alert to every eligible viewer on this server and forwards it network-wide. */
+    private boolean shouldReceive(Player recipient, UUID senderId, Channel channel) {
+        if (isHidden(recipient, channel)) return false;
+        if (channel != Channel.LOCAL && !canUse(recipient, channel)) return false;
+        if (plugin.getPluginConfig().getBoolean("ignore.public-chat.enabled", false)
+                && plugin.getIgnoreManager().isIgnoring(recipient.getUniqueId(), senderId)) return false;
+        return !plugin.getMuteManager().isMuted(recipient, channel.id);
+    }
+
+    private String applyMentionHighlight(Player sender, String message) {
+        if (!plugin.getPluginConfig().getBoolean("mentions.enabled", true)
+                || !sender.hasPermission("thunderchat.mention")) return message;
+        String color = plugin.getPluginConfig().getString("mentions.highlight-color", "&e");
+        String prefix = ChatColor.translateAlternateColorCodes('&', color);
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            String name = target.getName();
+            message = message.replaceAll("(?i)(?<![A-Za-z0-9_])@" + Pattern.quote(name) + "\\b",
+                    java.util.regex.Matcher.quoteReplacement(prefix + "@" + name + ChatColor.RESET));
+        }
+        return message;
+    }
+
+    private void playMentionSoundIfNeeded(Player recipient, String message, Player sender) {
+        if (!plugin.getPluginConfig().getBoolean("mentions.enabled", true)
+                || !sender.hasPermission("thunderchat.mention")) return;
+        String name = recipient.getName();
+        if (!message.matches("(?s).*?(?i)(?<![A-Za-z0-9_])@" + Pattern.quote(name) + "\\b.*")) return;
+        try {
+            Sound sound = Sound.valueOf(plugin.getPluginConfig().getString("mentions.sound", "ENTITY_EXPERIENCE_ORB_PICKUP"));
+            recipient.playSound(recipient.getLocation(), sound, 1.0f, 1.0f);
+        } catch (IllegalArgumentException ignored) {
+            plugin.getLogger().warning("Invalid mentions.sound in config: " + plugin.getPluginConfig().getString("mentions.sound"));
+        }
+    }
+
     public void sendAlert(String type, Player source, String blockedMessage) {
         String server = plugin.getPluginConfig().getString("network.server-name", "server");
         String output = plugin.getAlertManager().format(type, server, source.getName(), blockedMessage);
@@ -77,16 +124,14 @@ public final class GlobalChatManager implements PluginMessageListener {
             try {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 DataOutputStream data = new DataOutputStream(bytes);
-                data.writeInt(4); data.writeUTF("ALERT"); data.writeUTF(type); data.writeUTF(output); data.flush();
+                data.writeInt(PROTOCOL_VERSION); data.writeUTF(PacketKind.ALERT.name()); data.writeUTF(type); data.writeUTF(output); data.flush();
                 sendNetwork(source, bytes.toByteArray());
             } catch (IOException e) { plugin.getLogger().warning("Could not forward filter alert: " + e.getMessage()); }
         }
     }
 
     private void sendAlertLocally(String type, String output) {
-        for (Player recipient : Bukkit.getOnlinePlayers()) {
-            if (plugin.getAlertManager().canReceive(recipient, type)) recipient.sendMessage(output);
-        }
+        for (Player recipient : Bukkit.getOnlinePlayers()) if (plugin.getAlertManager().canReceive(recipient, type)) recipient.sendMessage(output);
     }
 
     public void clearChat(Channel channel, Player source) {
@@ -114,14 +159,22 @@ public final class GlobalChatManager implements PluginMessageListener {
         if (template == null || template.isEmpty() || !Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) return "";
         return PlaceholderAPI.setPlaceholders(player, template);
     }
-    private void forwardChat(Player player, Channel channel, String resolvedOutput) {
-        try { ByteArrayOutputStream bytes = new ByteArrayOutputStream(); DataOutputStream data = new DataOutputStream(bytes); data.writeInt(3); data.writeUTF("CHAT"); data.writeUTF(channel.id); data.writeUTF(resolvedOutput); data.flush(); sendNetwork(player, bytes.toByteArray()); }
-        catch (IOException e) { plugin.getLogger().warning("Could not forward global chat: " + e.getMessage()); }
+
+    private void forwardChat(Player player, Channel channel, UUID senderId, String resolvedOutput) {
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(); DataOutputStream data = new DataOutputStream(bytes);
+            data.writeInt(PROTOCOL_VERSION); data.writeUTF(PacketKind.CHAT.name()); data.writeUTF(channel.id); data.writeUTF(senderId.toString()); data.writeUTF(resolvedOutput); data.flush();
+            sendNetwork(player, bytes.toByteArray());
+        } catch (IOException e) { plugin.getLogger().warning("Could not forward global chat: " + e.getMessage()); }
     }
+
     private void forwardClear(Player player, Channel channel) {
-        try { ByteArrayOutputStream bytes = new ByteArrayOutputStream(); DataOutputStream data = new DataOutputStream(bytes); data.writeInt(1); data.writeUTF("CLEAR"); data.writeUTF(channel.id); data.flush(); sendNetwork(player, bytes.toByteArray()); }
-        catch (IOException e) { plugin.getLogger().warning("Could not forward chat clear: " + e.getMessage()); }
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(); DataOutputStream data = new DataOutputStream(bytes);
+            data.writeInt(PROTOCOL_VERSION); data.writeUTF(PacketKind.CLEAR.name()); data.writeUTF(channel.id); data.flush(); sendNetwork(player, bytes.toByteArray());
+        } catch (IOException e) { plugin.getLogger().warning("Could not forward chat clear: " + e.getMessage()); }
     }
+
     private void sendNetwork(Player player, byte[] payload) throws IOException {
         ByteArrayOutputStream outerBytes = new ByteArrayOutputStream(); DataOutputStream outer = new DataOutputStream(outerBytes);
         outer.writeUTF("Forward"); outer.writeUTF("ALL"); outer.writeUTF("ThunderChat"); outer.writeShort(payload.length); outer.write(payload); outer.flush();
@@ -136,22 +189,24 @@ public final class GlobalChatManager implements PluginMessageListener {
             int length = outer.readUnsignedShort(); if (length <= 0 || length > outer.available()) return;
             byte[] payload = new byte[length]; outer.readFully(payload);
             DataInputStream input = new DataInputStream(new ByteArrayInputStream(payload));
-            int type = input.readInt(); String kind = input.readUTF();
-            if (type == 1 && "CLEAR".equals(kind)) {
+            int version = input.readInt(); if (version != PROTOCOL_VERSION) return;
+            String kind = input.readUTF();
+
+            if (PacketKind.CLEAR.name().equals(kind)) {
                 Channel clearChannel = Channel.fromId(input.readUTF()); if (clearChannel == null || clearChannel == Channel.LOCAL) return;
                 for (Player recipient : Bukkit.getOnlinePlayers()) if (canUse(recipient, clearChannel) && !isHidden(recipient, clearChannel) && !ClearChatCommand.hasBypassPermission(recipient, clearChannel.id)) ClearChatCommand.sendClear(recipient);
                 return;
             }
-            if (type == 3 && "CHAT".equals(kind)) {
+            if (PacketKind.CHAT.name().equals(kind)) {
                 Channel chatChannel = Channel.fromId(input.readUTF()); if (chatChannel == null || chatChannel == Channel.LOCAL) return;
-                String output = input.readUTF();
-                for (Player recipient : Bukkit.getOnlinePlayers()) if (canUse(recipient, chatChannel) && !isHidden(recipient, chatChannel) && !plugin.getMuteManager().isMuted(recipient, chatChannel.id)) recipient.sendMessage(output);
+                UUID senderId = UUID.fromString(input.readUTF()); String output = input.readUTF();
+                for (Player recipient : Bukkit.getOnlinePlayers()) if (shouldReceive(recipient, senderId, chatChannel)) recipient.sendMessage(output);
                 return;
             }
-            if (type == 4 && "ALERT".equals(kind)) {
+            if (PacketKind.ALERT.name().equals(kind)) {
                 String alertType = input.readUTF(); String output = input.readUTF();
                 for (Player recipient : Bukkit.getOnlinePlayers()) if (plugin.getAlertManager().canReceive(recipient, alertType)) recipient.sendMessage(output);
             }
-        } catch (Exception e) { plugin.getLogger().warning("Malformed ThunderChat network message."); }
+        } catch (Exception e) { plugin.getLogger().warning("Malformed or unsupported ThunderChat network message: " + e.getMessage()); }
     }
 }
