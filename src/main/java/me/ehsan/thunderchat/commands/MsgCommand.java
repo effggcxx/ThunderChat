@@ -7,6 +7,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.Arrays;
+
 public class MsgCommand implements CommandExecutor {
     private final ThunderChat plugin;
     public MsgCommand(ThunderChat plugin) { this.plugin = plugin; }
@@ -20,7 +22,15 @@ public class MsgCommand implements CommandExecutor {
         Player target = plugin.getServer().getPlayerExact(args[0]);
         if (target == null) { player.sendMessage(ChatColor.RED + "Player '" + args[0] + "' is not online."); return true; }
         if (target.equals(player)) { player.sendMessage(ChatColor.RED + "You can't message yourself."); return true; }
-        String message = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length));
+        String message = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+
+        if (plugin.getFilterManager().shouldBlockPrivateMessage(player, message)) return true;
+        if (!plugin.getCapsManager().canBypass(player) && plugin.getCapsManager().isAllCaps(message)) {
+            plugin.getAlertManager().alert("caps", player, message);
+            message = plugin.getCapsManager().normalize(message);
+            plugin.getCapsManager().notifyPlayer(player);
+        }
+
         if (plugin.getMessageManager().send(player, target, message)) plugin.getSpyManager().spyPrivateMessage(player, target, message);
         return true;
     }
