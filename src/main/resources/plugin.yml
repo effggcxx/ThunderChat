@@ -71,6 +71,14 @@ permissions:
   thunderchat.chatcolor:
     description: Allows using the Chat Color GUI and applying chat colors
     default: false
+  thunderchat.chatcolor.custom.*:
+    description: Allows every custom Chat Color formatting option
+    default: false
+    children:
+      thunderchat.chatcolor.custom: true
+  thunderchat.chatcolor.custom:
+    description: Allows using custom MiniMessage chat formatting
+    default: false
   thunderchat.msg:
     description: Allows sending private messages
     default: true
