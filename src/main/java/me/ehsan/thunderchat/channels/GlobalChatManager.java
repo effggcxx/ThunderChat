@@ -6,6 +6,7 @@ import me.ehsan.thunderchat.commands.ClearChatCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
@@ -24,20 +25,57 @@ public final class GlobalChatManager implements PluginMessageListener {
         public static Channel fromId(String id) { if (id == null) return null; for (Channel c : values()) if (c.id.equalsIgnoreCase(id)) return c; return null; }
     }
     private static GlobalChatManager instance;
-    private final ThunderChat plugin; private final Map<UUID, Channel> active = new HashMap<>(); private final Map<UUID, EnumSet<Channel>> hidden = new HashMap<>();
-    public GlobalChatManager(ThunderChat plugin) { this.plugin = plugin; instance = this; plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, "BungeeCord", this); }
+    private final ThunderChat plugin;
+    private final Map<UUID, Channel> active = new HashMap<>();
+    private final Map<UUID, EnumSet<Channel>> hidden = new HashMap<>();
+    private final File stateFile;
+
+    public GlobalChatManager(ThunderChat plugin) { this.plugin = plugin; instance = this; this.stateFile = new File(plugin.getDataFolder(), "channel-state.yml"); loadState(); plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, "BungeeCord", this); }
     public static GlobalChatManager getInstance() { return instance; }
     public Channel get(Player player) { return active.getOrDefault(player.getUniqueId(), Channel.LOCAL); }
-    public void set(Player player, Channel channel) { active.put(player.getUniqueId(), channel == null ? Channel.LOCAL : channel); }
+    public void set(Player player, Channel channel) { active.put(player.getUniqueId(), channel == null ? Channel.LOCAL : channel); savePlayerState(player.getUniqueId()); }
     public void toggle(Player player, Channel channel) { set(player, get(player) == channel ? Channel.LOCAL : channel); }
     public boolean canUse(Player player, Channel channel) { if (channel == Channel.LOCAL) return true; return player.hasPermission(plugin.getPluginConfig().getString("channels." + channel.id + ".permission", "thunderchat.channel." + channel.id)); }
     public boolean isHidden(Player player, Channel channel) { return hidden.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Channel.class)).contains(channel); }
-    public void setHidden(Player player, Channel channel, boolean value) { EnumSet<Channel> channels = hidden.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Channel.class)); if (value) channels.add(channel); else channels.remove(channel); if (get(player) == channel && value) set(player, Channel.LOCAL); if (channels.isEmpty()) hidden.remove(player.getUniqueId()); }
+    public void setHidden(Player player, Channel channel, boolean value) { EnumSet<Channel> channels = hidden.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Channel.class)); if (value) channels.add(channel); else channels.remove(channel); if (get(player) == channel && value) active.put(player.getUniqueId(), Channel.LOCAL); if (channels.isEmpty()) hidden.remove(player.getUniqueId()); savePlayerState(player.getUniqueId()); }
     public void toggleHidden(Player player, Channel channel) { setHidden(player, channel, !isHidden(player, channel)); }
-    public void hideAll(Player player) { hidden.put(player.getUniqueId(), EnumSet.allOf(Channel.class)); set(player, Channel.LOCAL); }
-    public void showAll(Player player) { hidden.remove(player.getUniqueId()); }
+    public void hideAll(Player player) { hidden.put(player.getUniqueId(), EnumSet.allOf(Channel.class)); active.put(player.getUniqueId(), Channel.LOCAL); savePlayerState(player.getUniqueId()); }
+    public void showAll(Player player) { hidden.remove(player.getUniqueId()); savePlayerState(player.getUniqueId()); }
     public List<Channel> getAvailableChannels(Player player) { List<Channel> result = new ArrayList<>(); for (Channel c : Channel.values()) if (canUse(player, c)) result.add(c); return result; }
     public void clearPlayer(UUID id) { active.remove(id); hidden.remove(id); }
+
+    public void restorePlayer(Player player) {
+        UUID id = player.getUniqueId();
+        Channel channel = active.getOrDefault(id, Channel.LOCAL);
+        if (!canUse(player, channel) || isHidden(player, channel)) active.put(id, Channel.LOCAL);
+    }
+
+    private void loadState() {
+        active.clear(); hidden.clear();
+        if (!"yaml".equalsIgnoreCase(plugin.getPluginConfig().getString("storage.type", "yaml")) || !stateFile.exists()) return;
+        YamlConfiguration data = YamlConfiguration.loadConfiguration(stateFile);
+        for (String rawId : data.getConfigurationSection("players") == null ? Collections.<String>emptySet() : data.getConfigurationSection("players").getKeys(false)) {
+            try {
+                UUID id = UUID.fromString(rawId);
+                Channel channel = Channel.fromId(data.getString("players." + rawId + ".active", "local"));
+                active.put(id, channel == null ? Channel.LOCAL : channel);
+                EnumSet<Channel> hiddenChannels = EnumSet.noneOf(Channel.class);
+                for (String hiddenId : data.getStringList("players." + rawId + ".hidden")) { Channel hiddenChannel = Channel.fromId(hiddenId); if (hiddenChannel != null) hiddenChannels.add(hiddenChannel); }
+                if (!hiddenChannels.isEmpty()) hidden.put(id, hiddenChannels);
+            } catch (IllegalArgumentException ignored) { }
+        }
+    }
+
+    private synchronized void savePlayerState(UUID id) {
+        if (!"yaml".equalsIgnoreCase(plugin.getPluginConfig().getString("storage.type", "yaml"))) return;
+        YamlConfiguration data = stateFile.exists() ? YamlConfiguration.loadConfiguration(stateFile) : new YamlConfiguration();
+        String path = "players." + id;
+        data.set(path + ".active", active.getOrDefault(id, Channel.LOCAL).id);
+        EnumSet<Channel> channels = hidden.get(id);
+        data.set(path + ".hidden", channels == null ? Collections.emptyList() : channels.stream().map(Channel::id).toList());
+        try { if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs(); data.save(stateFile); }
+        catch (IOException e) { plugin.getLogger().warning("Could not save channel-state.yml: " + e.getMessage()); }
+    }
 
     public void send(Player player, String text) {
         Channel channel = get(player); if (!canUse(player, channel) || isHidden(player, channel)) { set(player, Channel.LOCAL); channel = Channel.LOCAL; }
