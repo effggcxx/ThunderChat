@@ -27,7 +27,7 @@ public final class SpyManager {
     }
 
     public boolean canSpy(Player player) {
-        return player.hasPermission("thunderchat.command.spy") && !player.hasPermission("thunderchat.bypass.spy");
+        return player.hasPermission("thunderchat.command.spy");
     }
 
     public boolean isEnabled(Player player, Section section) {
