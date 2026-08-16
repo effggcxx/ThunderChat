@@ -21,6 +21,7 @@ import me.ehsan.thunderchat.listeners.PlayerStateListener;
 import me.ehsan.thunderchat.messaging.IgnoreManager;
 import me.ehsan.thunderchat.messaging.PrivateMessageManager;
 import me.ehsan.thunderchat.muting.MuteManager;
+import me.ehsan.thunderchat.network.NetworkMessenger;
 import me.ehsan.thunderchat.spy.SpyListener;
 import me.ehsan.thunderchat.spy.SpyManager;
 import org.bukkit.ChatColor;
@@ -30,6 +31,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ThunderChat extends JavaPlugin {
     private static ThunderChat instance;
+    private NetworkMessenger networkMessenger;
     private GlobalChatManager globalChatManager;
     private FilterManager filterManager;
     private AlertManager alertManager;
@@ -43,6 +45,7 @@ public final class ThunderChat extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this; loadPluginConfig();
+        this.networkMessenger = new NetworkMessenger(this);
         this.muteManager = new MuteManager(this); this.globalChatManager = new GlobalChatManager(this); this.alertManager = new AlertManager(this);
         this.filterManager = new FilterManager(this); this.capsManager = new CapsManager(this); this.messageManager = new PrivateMessageManager(this);
         this.ignoreManager = new IgnoreManager(this); this.spyManager = new SpyManager(this);
@@ -72,6 +75,7 @@ public final class ThunderChat extends JavaPlugin {
     public void loadPluginConfig() { saveDefaultConfig(); reloadConfig(); this.config = getConfig(); }
     private void printEnableBanner() { String prefix = ChatColor.GOLD + "" + ChatColor.BOLD + "ThunderChat" + ChatColor.RESET; String version = getPluginMeta().getVersion(); getServer().getConsoleSender().sendMessage(""); getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "  ⚡ " + prefix + ChatColor.GRAY + " v" + version); getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "  ✔ Plugin enabled"); getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "  ✔ Config loaded " + ChatColor.GRAY + "(" + config.getKeys(true).size() + " keys)"); getServer().getConsoleSender().sendMessage(""); }
     public static ThunderChat getInstance() { return instance; }
+    public NetworkMessenger getNetworkMessenger() { return networkMessenger; }
     public GlobalChatManager getGlobalChatManager() { return globalChatManager; } public FilterManager getFilterManager() { return filterManager; } public AlertManager getAlertManager() { return alertManager; }
     public CapsManager getCapsManager() { return capsManager; } public PrivateMessageManager getMessageManager() { return messageManager; } public IgnoreManager getIgnoreManager() { return ignoreManager; }
     public MuteManager getMuteManager() { return muteManager; } public SpyManager getSpyManager() { return spyManager; } public FileConfiguration getPluginConfig() { return config; }
