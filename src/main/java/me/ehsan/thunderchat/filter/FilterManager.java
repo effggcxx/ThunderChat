@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
- * Chat filters: spam, flood, caps, blocked words, swear words, and advertisements.
+ * Chat filters: spam, flood, caps detection, blocked words, swear words, and advertisements.
+ * Caps are deliberately handled as normalization by CapsManager rather than as a hard block.
  */
 public class FilterManager {
     private final ThunderChat plugin;
@@ -30,7 +31,17 @@ public class FilterManager {
     public boolean isEnabled() { return plugin.getPluginConfig().getBoolean("filter.enabled", true); }
 
     public boolean shouldBlock(Player player, String message) {
+        return shouldBlock(player, message, false);
+    }
+
+    /** Applies the same filter pipeline to private messages when enabled. */
+    public boolean shouldBlockPrivateMessage(Player player, String message) {
+        return shouldBlock(player, message, true);
+    }
+
+    private boolean shouldBlock(Player player, String message, boolean privateMessage) {
         if (!isEnabled()) return false;
+        if (privateMessage && !plugin.getPluginConfig().getBoolean("filter.private-messages.enabled", true)) return false;
         if (player.hasPermission("thunderchat.bypass.filter") || player.hasPermission("thunderchat.bypass.spam")) {
             recordMessage(player.getUniqueId(), message);
             return false;
@@ -43,11 +54,6 @@ public class FilterManager {
         if (isFlood(message) && !player.hasPermission("thunderchat.bypass.flood")) {
             player.sendMessage(ChatColor.RED + "Please don't flood the chat with repeated characters.");
             plugin.getAlertManager().alert("flood", player, message);
-            return true;
-        }
-        if (isExcessiveCaps(message) && !player.hasPermission("thunderchat.bypass.filter")) {
-            player.sendMessage(ChatColor.RED + "Please don't use excessive caps.");
-            plugin.getAlertManager().alert("caps", player, message);
             return true;
         }
         if (containsSwearWord(message) && !player.hasPermission("thunderchat.bypass.swear")) {
@@ -74,26 +80,29 @@ public class FilterManager {
         String previous = lastMessage.get(id);
         Long previousTime = lastMessageTime.get(id);
         if (previous == null || previousTime == null) return false;
+
+        long elapsedSec = Math.max(0L, (System.currentTimeMillis() - previousTime) / 1000L);
+        long cooldown = Math.max(1L, plugin.getPluginConfig().getLong("filter.spam.cooldown-seconds", 2L));
+        int maxRepeated = Math.max(1, plugin.getPluginConfig().getInt("filter.spam.max-repeated-messages", 3));
+        if (elapsedSec > cooldown) {
+            repeatStreak.remove(id);
+            return false;
+        }
+
         double similarity = ChatSimilarity.similarity(previous, message);
-        long elapsedSec = (System.currentTimeMillis() - previousTime) / 1000L;
+        int streak = repeatStreak.getOrDefault(id, 0);
+        streak = similarity >= 0.85 ? streak + 1 : 0;
+        repeatStreak.put(id, streak);
+
         int score = 0;
         if (similarity >= 0.90) score += 2;
         else if (similarity >= 0.80) score += 1;
         if (similarity >= 1.0) score += 2;
-        if (elapsedSec < 3) score += 2;
-        else if (elapsedSec < 10) score += 1;
-        int streak = repeatStreak.getOrDefault(id, 0);
-        streak = similarity >= 0.85 ? streak + 1 : 0;
-        if (streak >= 3) score += 3;
-        int threshold = plugin.getPluginConfig().getInt("filter.spam.score-threshold", 5);
-        boolean spam = score >= threshold;
-        if (spam) {
-            repeatStreak.put(id, streak);
-            lastMessageTime.put(id, System.currentTimeMillis());
-            return true;
-        }
-        repeatStreak.put(id, similarity >= 0.85 ? streak : 0);
-        return false;
+        if (elapsedSec <= cooldown) score += 2;
+        if (streak >= maxRepeated) score += 3;
+
+        int threshold = Math.max(1, plugin.getPluginConfig().getInt("filter.spam.score-threshold", 5));
+        return score >= threshold || streak >= maxRepeated;
     }
 
     public boolean isFlood(String message) {
