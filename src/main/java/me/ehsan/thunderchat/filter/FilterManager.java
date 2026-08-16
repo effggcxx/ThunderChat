@@ -42,11 +42,15 @@ public class FilterManager {
     private boolean shouldBlock(Player player, String message, boolean privateMessage) {
         if (!isEnabled()) return false;
         if (privateMessage && !plugin.getPluginConfig().getBoolean("filter.private-messages.enabled", true)) return false;
-        if (player.hasPermission("thunderchat.bypass.filter") || player.hasPermission("thunderchat.bypass.spam")) {
+
+        boolean bypassAll = player.hasPermission("thunderchat.bypass.filter");
+        boolean bypassSpam = bypassAll || player.hasPermission("thunderchat.bypass.spam");
+        if (bypassAll) {
             recordMessage(player.getUniqueId(), message);
             return false;
         }
-        if (isSpam(player, message)) {
+
+        if (!bypassSpam && isSpam(player, message)) {
             player.sendMessage(ChatColor.RED + "Please don't spam the chat.");
             plugin.getAlertManager().alert("spam", player, message);
             return true;
