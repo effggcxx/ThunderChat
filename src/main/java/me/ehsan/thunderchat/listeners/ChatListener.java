@@ -21,6 +21,7 @@ public class ChatListener implements Listener {
 
         if (plugin.getChatColorManager().isAwaitingCustomFormat(player)) {
             event.setCancelled(true);
+            final String formatMessage = message;
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 if (!plugin.getChatColorManager().isAwaitingCustomFormat(player)) return;
                 plugin.getChatColorManager().cancelCustomFormat(player);
@@ -28,11 +29,11 @@ public class ChatListener implements Listener {
                     player.sendMessage(Component.text("You no longer have permission to use custom formatting.", NamedTextColor.RED));
                     return;
                 }
-                if (!plugin.getChatColorManager().isValidCustomFormat(message)) {
+                if (!plugin.getChatColorManager().isValidCustomFormat(formatMessage)) {
                     player.sendMessage(Component.text("Invalid MiniMessage format. Your custom format was not applied.", NamedTextColor.RED));
                     return;
                 }
-                plugin.getChatColorManager().setCustomFormat(player, message);
+                plugin.getChatColorManager().setCustomFormat(player, formatMessage);
                 player.sendMessage(Component.text("Custom chat formatting applied.", NamedTextColor.GREEN));
             });
             return;
