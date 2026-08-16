@@ -2,7 +2,6 @@ package me.ehsan.thunderchat.listeners;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import me.ehsan.thunderchat.ThunderChat;
-import me.ehsan.thunderchat.channels.GlobalChatManager;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,6 +21,7 @@ public class ChatListener implements Listener {
             return;
         }
         if (!plugin.getCapsManager().canBypass(player) && plugin.getCapsManager().isAllCaps(message)) {
+            plugin.getAlertManager().alert("caps", player, message);
             message = plugin.getCapsManager().normalize(message);
             plugin.getCapsManager().notifyPlayer(player);
         }
