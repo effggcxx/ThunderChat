@@ -8,32 +8,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Tracks who each player should /reply to, and handles formatting +
- * delivering private messages between two players.
- */
+/** Tracks reply targets and handles private messages. */
 public class PrivateMessageManager {
-
     private final ThunderChat plugin;
-
-    // sender UUID -> UUID of the last player they exchanged a PM with
     private final Map<UUID, UUID> replyTarget = new HashMap<>();
 
-    public PrivateMessageManager(ThunderChat plugin) {
-        this.plugin = plugin;
-    }
+    public PrivateMessageManager(ThunderChat plugin) { this.plugin = plugin; }
 
     public boolean isEnabled() {
         return plugin.getPluginConfig().getBoolean("private-messages.enabled", true);
     }
 
-    /**
-     * Sends a private message from one player to another, updates both
-     * players' reply targets, and optionally logs it to console.
-     * Returns false if delivery was blocked (e.g. target is ignoring sender).
-     */
     public boolean send(Player sender, Player target, String message) {
-        // Target is ignoring the sender → block delivery and notify sender
         if (plugin.getIgnoreManager().isIgnoring(target, sender)) {
             sender.sendMessage(ChatColor.RED + target.getName() + " is ignoring you.");
             return false;
@@ -42,14 +28,12 @@ public class PrivateMessageManager {
         String toTarget = ChatColor.GRAY + "[" + ChatColor.LIGHT_PURPLE + sender.getName()
                 + ChatColor.GRAY + " -> " + ChatColor.LIGHT_PURPLE + "me" + ChatColor.GRAY + "] "
                 + ChatColor.WHITE + message;
-
         String toSender = ChatColor.GRAY + "[" + ChatColor.LIGHT_PURPLE + "me"
                 + ChatColor.GRAY + " -> " + ChatColor.LIGHT_PURPLE + target.getName() + ChatColor.GRAY + "] "
                 + ChatColor.WHITE + message;
 
         target.sendMessage(toTarget);
         sender.sendMessage(toSender);
-
         replyTarget.put(sender.getUniqueId(), target.getUniqueId());
         replyTarget.put(target.getUniqueId(), sender.getUniqueId());
 
@@ -59,12 +43,16 @@ public class PrivateMessageManager {
         return true;
     }
 
-    /** Returns the player this UUID should /reply to, or null if none set / offline. */
     public Player getReplyTarget(UUID player) {
         UUID targetId = replyTarget.get(player);
-        if (targetId == null) {
-            return null;
-        }
+        if (targetId == null) return null;
         return plugin.getServer().getPlayer(targetId);
+    }
+
+    public void clearReplyTarget(UUID player) { replyTarget.remove(player); }
+
+    public void clearPlayer(UUID player) {
+        replyTarget.remove(player);
+        replyTarget.entrySet().removeIf(entry -> entry.getValue().equals(player));
     }
 }
