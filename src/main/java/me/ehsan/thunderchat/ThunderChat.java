@@ -3,6 +3,9 @@ package me.ehsan.thunderchat;
 import me.ehsan.thunderchat.alerts.AlertManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
+import me.ehsan.thunderchat.chatcolor.ChatColorCommand;
+import me.ehsan.thunderchat.chatcolor.ChatColorListener;
+import me.ehsan.thunderchat.chatcolor.ChatColorManager;
 import me.ehsan.thunderchat.commands.ChannelCommand;
 import me.ehsan.thunderchat.commands.ChannelMuteListCommand;
 import me.ehsan.thunderchat.commands.ChatChannelCommand;
@@ -40,6 +43,7 @@ public final class ThunderChat extends JavaPlugin {
     private IgnoreManager ignoreManager;
     private MuteManager muteManager;
     private SpyManager spyManager;
+    private ChatColorManager chatColorManager;
     private FileConfiguration config;
 
     @Override
@@ -48,7 +52,7 @@ public final class ThunderChat extends JavaPlugin {
         this.networkMessenger = new NetworkMessenger(this);
         this.muteManager = new MuteManager(this); this.globalChatManager = new GlobalChatManager(this); this.alertManager = new AlertManager(this);
         this.filterManager = new FilterManager(this); this.capsManager = new CapsManager(this); this.messageManager = new PrivateMessageManager(this);
-        this.ignoreManager = new IgnoreManager(this); this.spyManager = new SpyManager(this);
+        this.ignoreManager = new IgnoreManager(this); this.spyManager = new SpyManager(this); this.chatColorManager = new ChatColorManager(this);
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
         getServer().getPluginManager().registerEvents(new SpyListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerStateListener(this), this);
@@ -61,13 +65,12 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF)); getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR));
         getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN)); getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK));
         getCommand("gc").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL)); getCommand("spy").setExecutor(new SpyCommand(this));
+        ChatColorCommand chatColorCommand = new ChatColorCommand(chatColorManager); getCommand("chatcolor").setExecutor(chatColorCommand);
+        getServer().getPluginManager().registerEvents(new ChatColorListener(this, chatColorManager, chatColorCommand), this);
 
         ThunderChatTabCompleter completer = new ThunderChatTabCompleter();
-        String[] completable = {"msg", "ignore", "unignore", "channel", "channelmutelist", "clearchat", "chathide", "chat", "spy", "thunderchat"};
-        for (String commandName : completable) {
-            PluginCommand command = getCommand(commandName);
-            if (command != null) command.setTabCompleter(completer);
-        }
+        String[] completable = {"msg", "ignore", "unignore", "channel", "channelmutelist", "clearchat", "chathide", "chat", "spy", "thunderchat", "chatcolor"};
+        for (String commandName : completable) { PluginCommand command = getCommand(commandName); if (command != null) command.setTabCompleter(completer); }
         printEnableBanner();
     }
 
@@ -78,5 +81,5 @@ public final class ThunderChat extends JavaPlugin {
     public NetworkMessenger getNetworkMessenger() { return networkMessenger; }
     public GlobalChatManager getGlobalChatManager() { return globalChatManager; } public FilterManager getFilterManager() { return filterManager; } public AlertManager getAlertManager() { return alertManager; }
     public CapsManager getCapsManager() { return capsManager; } public PrivateMessageManager getMessageManager() { return messageManager; } public IgnoreManager getIgnoreManager() { return ignoreManager; }
-    public MuteManager getMuteManager() { return muteManager; } public SpyManager getSpyManager() { return spyManager; } public FileConfiguration getPluginConfig() { return config; }
+    public MuteManager getMuteManager() { return muteManager; } public SpyManager getSpyManager() { return spyManager; } public ChatColorManager getChatColorManager() { return chatColorManager; } public FileConfiguration getPluginConfig() { return config; }
 }
