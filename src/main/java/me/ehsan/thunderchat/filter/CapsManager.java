@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Locale;
 
-/** Handles the anti-caps chat rule. */
+/** Handles the anti-caps normalization rule. Caps are normalized, not blocked. */
 public final class CapsManager {
     private final ThunderChat plugin;
 
@@ -13,31 +13,21 @@ public final class CapsManager {
         this.plugin = plugin;
     }
 
-    /**
-     * Returns true when the message is considered all caps.
-     * Non-letter characters are ignored; at least the configured minimum
-     * number of letters must be present.
-     */
     public boolean isAllCaps(String message) {
-        if (!plugin.getPluginConfig().getBoolean("filter.caps.enabled", true)) {
-            return false;
-        }
-
+        if (!plugin.getPluginConfig().getBoolean("filter.caps.enabled", true)) return false;
         int minLength = plugin.getPluginConfig().getInt("filter.caps.min-length-to-check", 8);
         int letters = 0;
         int uppercase = 0;
-
         for (int i = 0; i < message.length(); i++) {
             char c = message.charAt(i);
             if (Character.isLetter(c)) {
                 letters++;
-                if (Character.isUpperCase(c)) {
-                    uppercase++;
-                }
+                if (Character.isUpperCase(c)) uppercase++;
             }
         }
-
-        return letters >= minLength && uppercase == letters;
+        if (letters < minLength) return false;
+        double threshold = plugin.getPluginConfig().getDouble("filter.caps.max-percentage", 70.0);
+        return ((double) uppercase / letters) * 100.0 >= threshold;
     }
 
     public String normalize(String message) {
@@ -49,6 +39,7 @@ public final class CapsManager {
     }
 
     public boolean canBypass(Player player) {
-        return player.hasPermission("thunderchat.bypass.caps");
+        return player.hasPermission("thunderchat.bypass.caps")
+                || player.hasPermission("thunderchat.bypass.filter");
     }
 }
