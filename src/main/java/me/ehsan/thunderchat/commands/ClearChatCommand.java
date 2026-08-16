@@ -4,7 +4,6 @@ import me.ehsan.thunderchat.ThunderChat;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -12,7 +11,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Locale;
 
-/** Clears the visible chat for a local gamemode or a network-wide global channel. */
+/** Clears the visible chat for a local gamemode or a global network channel. */
 public final class ClearChatCommand implements CommandExecutor {
     private static final int CLEAR_LINES = 120;
     private final ThunderChat plugin;
@@ -33,7 +32,7 @@ public final class ClearChatCommand implements CommandExecutor {
                 player.sendMessage(Component.text("You don't have permission to clear this chat.", NamedTextColor.RED));
                 return true;
             }
-            clearLocal(player);
+            plugin.getGlobalChatManager().clearChat(Channel.LOCAL, player);
             return true;
         }
 
@@ -74,15 +73,6 @@ public final class ClearChatCommand implements CommandExecutor {
             case "highrank", "highrankchat", "hc" -> Channel.HIGHRANK;
             default -> null;
         };
-    }
-
-    private void clearLocal(Player source) {
-        for (Player target : Bukkit.getOnlinePlayers()) {
-            if (!hasBypassPermission(target, "local")) {
-                sendClear(target);
-            }
-        }
-        source.sendMessage(Component.text("Chat cleared for this gamemode.", NamedTextColor.GREEN));
     }
 
     public static boolean hasBypassPermission(Player player, String channel) {
