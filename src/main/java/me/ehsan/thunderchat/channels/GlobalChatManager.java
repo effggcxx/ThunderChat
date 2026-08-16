@@ -43,44 +43,14 @@ public final class GlobalChatManager implements PluginMessageListener {
     public void showAll(Player player) { hidden.remove(player.getUniqueId()); savePlayerState(player.getUniqueId()); }
     public List<Channel> getAvailableChannels(Player player) { List<Channel> result = new ArrayList<>(); for (Channel c : Channel.values()) if (canUse(player, c)) result.add(c); return result; }
     public void clearPlayer(UUID id) { active.remove(id); hidden.remove(id); }
-
-    public void restorePlayer(Player player) {
-        UUID id = player.getUniqueId();
-        Channel channel = active.getOrDefault(id, Channel.LOCAL);
-        if (!canUse(player, channel) || isHidden(player, channel)) active.put(id, Channel.LOCAL);
-    }
-
-    private void loadState() {
-        active.clear(); hidden.clear();
-        if (!"yaml".equalsIgnoreCase(plugin.getPluginConfig().getString("storage.type", "yaml")) || !stateFile.exists()) return;
-        YamlConfiguration data = YamlConfiguration.loadConfiguration(stateFile);
-        for (String rawId : data.getConfigurationSection("players") == null ? Collections.<String>emptySet() : data.getConfigurationSection("players").getKeys(false)) {
-            try {
-                UUID id = UUID.fromString(rawId);
-                Channel channel = Channel.fromId(data.getString("players." + rawId + ".active", "local"));
-                active.put(id, channel == null ? Channel.LOCAL : channel);
-                EnumSet<Channel> hiddenChannels = EnumSet.noneOf(Channel.class);
-                for (String hiddenId : data.getStringList("players." + rawId + ".hidden")) { Channel hiddenChannel = Channel.fromId(hiddenId); if (hiddenChannel != null) hiddenChannels.add(hiddenChannel); }
-                if (!hiddenChannels.isEmpty()) hidden.put(id, hiddenChannels);
-            } catch (IllegalArgumentException ignored) { }
-        }
-    }
-
-    private synchronized void savePlayerState(UUID id) {
-        if (!"yaml".equalsIgnoreCase(plugin.getPluginConfig().getString("storage.type", "yaml"))) return;
-        YamlConfiguration data = stateFile.exists() ? YamlConfiguration.loadConfiguration(stateFile) : new YamlConfiguration();
-        String path = "players." + id;
-        data.set(path + ".active", active.getOrDefault(id, Channel.LOCAL).id);
-        EnumSet<Channel> channels = hidden.get(id);
-        data.set(path + ".hidden", channels == null ? Collections.emptyList() : channels.stream().map(Channel::id).toList());
-        try { if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs(); data.save(stateFile); }
-        catch (IOException e) { plugin.getLogger().warning("Could not save channel-state.yml: " + e.getMessage()); }
-    }
+    public void restorePlayer(Player player) { UUID id = player.getUniqueId(); Channel channel = active.getOrDefault(id, Channel.LOCAL); if (!canUse(player, channel) || isHidden(player, channel)) active.put(id, Channel.LOCAL); }
+    private void loadState() { active.clear(); hidden.clear(); if (!"yaml".equalsIgnoreCase(plugin.getPluginConfig().getString("storage.type", "yaml")) || !stateFile.exists()) return; YamlConfiguration data = YamlConfiguration.loadConfiguration(stateFile); for (String rawId : data.getConfigurationSection("players") == null ? Collections.<String>emptySet() : data.getConfigurationSection("players").getKeys(false)) { try { UUID id = UUID.fromString(rawId); Channel channel = Channel.fromId(data.getString("players." + rawId + ".active", "local")); active.put(id, channel == null ? Channel.LOCAL : channel); EnumSet<Channel> hiddenChannels = EnumSet.noneOf(Channel.class); for (String hiddenId : data.getStringList("players." + rawId + ".hidden")) { Channel hiddenChannel = Channel.fromId(hiddenId); if (hiddenChannel != null) hiddenChannels.add(hiddenChannel); } if (!hiddenChannels.isEmpty()) hidden.put(id, hiddenChannels); } catch (IllegalArgumentException ignored) { } } }
+    private synchronized void savePlayerState(UUID id) { if (!"yaml".equalsIgnoreCase(plugin.getPluginConfig().getString("storage.type", "yaml"))) return; YamlConfiguration data = stateFile.exists() ? YamlConfiguration.loadConfiguration(stateFile) : new YamlConfiguration(); String path = "players." + id; data.set(path + ".active", active.getOrDefault(id, Channel.LOCAL).id); EnumSet<Channel> channels = hidden.get(id); data.set(path + ".hidden", channels == null ? Collections.emptyList() : channels.stream().map(Channel::id).toList()); try { if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs(); data.save(stateFile); } catch (IOException e) { plugin.getLogger().warning("Could not save channel-state.yml: " + e.getMessage()); } }
 
     public void send(Player player, String text) {
         Channel channel = get(player); if (!canUse(player, channel) || isHidden(player, channel)) { set(player, Channel.LOCAL); channel = Channel.LOCAL; }
         if (plugin.getMuteManager().isMuted(player, channel.id)) { player.sendMessage(ChatColor.RED + "That chat is currently muted for you."); return; }
-        String server = plugin.getPluginConfig().getString("network.server-name", "server"); String preparedMessage = applyMentionHighlight(player, text);
+        String server = plugin.getPluginConfig().getString("network.server-name", "server"); String preparedMessage = plugin.getChatColorManager().colorize(player, applyMentionHighlight(player, text));
         String output = format(getFormat(channel), channel, server, prefix(player), player.getName(), preparedMessage, player);
         for (Player recipient : Bukkit.getOnlinePlayers()) if (shouldReceive(recipient, player.getUniqueId(), channel)) { recipient.sendMessage(output); playMentionSoundIfNeeded(recipient, text, player); }
         if (channel.isNetwork()) forwardChat(player, channel, player.getUniqueId(), output);
@@ -96,9 +66,5 @@ public final class GlobalChatManager implements PluginMessageListener {
     private String prefix(Player player) { String template = plugin.getPluginConfig().getString("format.prefix-placeholder", "%luckperms_prefix% "); if (template == null || template.isEmpty() || !Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) return ""; return PlaceholderAPI.setPlaceholders(player, template); }
     private void forwardChat(Player player, Channel channel, UUID senderId, String resolvedOutput) { try { ByteArrayOutputStream bytes = new ByteArrayOutputStream(); DataOutputStream data = new DataOutputStream(bytes); data.writeInt(PROTOCOL_VERSION); data.writeUTF(PacketKind.CHAT.name()); data.writeUTF(channel.id); data.writeUTF(senderId.toString()); data.writeUTF(resolvedOutput); data.flush(); plugin.getNetworkMessenger().forwardAll(player, bytes.toByteArray()); } catch (IOException e) { plugin.getLogger().warning("Could not forward global chat: " + e.getMessage()); } }
     private void forwardClear(Player player, Channel channel) { try { ByteArrayOutputStream bytes = new ByteArrayOutputStream(); DataOutputStream data = new DataOutputStream(bytes); data.writeInt(PROTOCOL_VERSION); data.writeUTF(PacketKind.CLEAR.name()); data.writeUTF(channel.id); data.flush(); plugin.getNetworkMessenger().forwardAll(player, bytes.toByteArray()); } catch (IOException e) { plugin.getLogger().warning("Could not forward chat clear: " + e.getMessage()); } }
-    @Override public void onPluginMessageReceived(String channel, Player source, byte[] data) { if (!"BungeeCord".equals(channel)) return; try { DataInputStream outer = new DataInputStream(new ByteArrayInputStream(data)); if (!"ThunderChat".equals(outer.readUTF())) return; int length = outer.readUnsignedShort(); if (length <= 0 || length > outer.available()) return; byte[] payload = new byte[length]; outer.readFully(payload); DataInputStream input = new DataInputStream(new ByteArrayInputStream(payload)); int version = input.readInt(); if (version != PROTOCOL_VERSION) return; String kind = input.readUTF();
-        if (PacketKind.CLEAR.name().equals(kind)) { Channel clearChannel = Channel.fromId(input.readUTF()); if (clearChannel == null || clearChannel == Channel.LOCAL) return; for (Player recipient : Bukkit.getOnlinePlayers()) if (canUse(recipient, clearChannel) && !isHidden(recipient, clearChannel) && !ClearChatCommand.hasBypassPermission(recipient, clearChannel.id)) ClearChatCommand.sendClear(recipient); return; }
-        if (PacketKind.CHAT.name().equals(kind)) { Channel chatChannel = Channel.fromId(input.readUTF()); if (chatChannel == null || chatChannel == Channel.LOCAL) return; UUID senderId = UUID.fromString(input.readUTF()); String output = input.readUTF(); if (plugin.getServer().getPlayer(senderId) != null) return; for (Player recipient : Bukkit.getOnlinePlayers()) if (shouldReceive(recipient, senderId, chatChannel)) recipient.sendMessage(output); return; }
-        if (PacketKind.ALERT.name().equals(kind)) { String alertType = input.readUTF(); UUID senderId = UUID.fromString(input.readUTF()); String output = input.readUTF(); if (plugin.getServer().getPlayer(senderId) != null) return; for (Player recipient : Bukkit.getOnlinePlayers()) if (plugin.getAlertManager().canReceive(recipient, alertType)) recipient.sendMessage(output); }
-    } catch (Exception e) { plugin.getLogger().warning("Malformed or unsupported ThunderChat network message: " + e.getMessage()); } }
+    @Override public void onPluginMessageReceived(String channel, Player source, byte[] data) { if (!"BungeeCord".equals(channel)) return; try { DataInputStream outer = new DataInputStream(new ByteArrayInputStream(data)); if (!"ThunderChat".equals(outer.readUTF())) return; int length = outer.readUnsignedShort(); if (length <= 0 || length > outer.available()) return; byte[] payload = new byte[length]; outer.readFully(payload); DataInputStream input = new DataInputStream(new ByteArrayInputStream(payload)); int version = input.readInt(); if (version != PROTOCOL_VERSION) return; String kind = input.readUTF(); if (PacketKind.CLEAR.name().equals(kind)) { Channel clearChannel = Channel.fromId(input.readUTF()); if (clearChannel == null || clearChannel == Channel.LOCAL) return; for (Player recipient : Bukkit.getOnlinePlayers()) if (canUse(recipient, clearChannel) && !isHidden(recipient, clearChannel) && !ClearChatCommand.hasBypassPermission(recipient, clearChannel.id)) ClearChatCommand.sendClear(recipient); return; } if (PacketKind.CHAT.name().equals(kind)) { Channel chatChannel = Channel.fromId(input.readUTF()); if (chatChannel == null || chatChannel == Channel.LOCAL) return; UUID senderId = UUID.fromString(input.readUTF()); String output = input.readUTF(); if (plugin.getServer().getPlayer(senderId) != null) return; for (Player recipient : Bukkit.getOnlinePlayers()) if (shouldReceive(recipient, senderId, chatChannel)) recipient.sendMessage(output); return; } if (PacketKind.ALERT.name().equals(kind)) { String alertType = input.readUTF(); UUID senderId = UUID.fromString(input.readUTF()); String output = input.readUTF(); if (plugin.getServer().getPlayer(senderId) != null) return; for (Player recipient : Bukkit.getOnlinePlayers()) if (plugin.getAlertManager().canReceive(recipient, alertType)) recipient.sendMessage(output); } } catch (Exception e) { plugin.getLogger().warning("Malformed or unsupported ThunderChat network message: " + e.getMessage()); } }
 }
