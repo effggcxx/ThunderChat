@@ -20,6 +20,7 @@ public final class NetworkMessenger {
     }
 
     public void forwardAll(Player carrier, byte[] payload) throws IOException {
+        if (!plugin.getPluginConfig().getBoolean("network.enabled", true)) return;
         if (carrier == null || payload == null) {
             throw new IOException("A connected player carrier and payload are required");
         }
