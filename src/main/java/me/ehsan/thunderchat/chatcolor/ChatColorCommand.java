@@ -34,6 +34,16 @@ public final class ChatColorCommand implements CommandExecutor {
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) { sender.sendMessage("Only players can use this command."); return true; }
         if (!manager.canUse(player)) { player.sendMessage(Component.text("You don't have permission to use Chat Color.", NamedTextColor.RED)); return true; }
+        if (args.length == 1 && args[0].equalsIgnoreCase("clear")) {
+            manager.clear(player);
+            player.closeInventory();
+            player.sendMessage(Component.text("Chat formatting cleared. Default chat format restored.", NamedTextColor.GREEN));
+            return true;
+        }
+        if (args.length > 0) {
+            player.sendMessage(Component.text("Usage: /chatcolor [clear]", NamedTextColor.RED));
+            return true;
+        }
         openMain(player); return true;
     }
     public void openMain(Player player) {
