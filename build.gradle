@@ -17,10 +17,6 @@ dependencies {
 
 java { toolchain.languageVersion = JavaLanguageVersion.of(21) }
 
-sourceSets {
-    main.java.exclude '**/channels/ChannelRouter.java'
-}
-
 processResources {
     filesMatching('plugin.yml') { expand(version: project.version) }
 }
