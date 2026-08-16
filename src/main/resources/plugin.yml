@@ -55,6 +55,10 @@ commands:
   spy:
     description: Monitor commands and private messages locally
     usage: /spy <on|off|status|toggle> [commands|private-messages]
+  chatcolor:
+    description: Open the Chat Color menu
+    usage: /chatcolor
+    aliases: [ccolor]
   thunderchat:
     description: Reload config / admin subcommands
     usage: /thunderchat <reload>
@@ -64,6 +68,9 @@ permissions:
   thunderchat.admin:
     description: Access to admin/reload commands
     default: op
+  thunderchat.chatcolor:
+    description: Allows using the Chat Color GUI and applying chat colors
+    default: false
   thunderchat.msg:
     description: Allows sending private messages
     default: true
