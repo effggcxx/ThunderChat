@@ -144,5 +144,8 @@ spy:
   # {type} remains available for custom formats. It is intentionally omitted from the defaults.
   private-message-format: "&8[&7SPY&r&8] &7{player}&r &8---> &7{target}&r &8: &7{message}"
   command-format: "&8[&7SPY&r&8] &7{player}&r &8: &7{message}"
+  anvil-format: "&8[&7SPY&r&8] &7{player}&r &8renamed an item to: &f{message}"
+  sign-format: "&8[&7SPY&r&8] &7{player}&r &8wrote on a sign: &f{message}"
+  book-format: "&8[&7SPY&r&8] &7{player}&r &8wrote in a book: &f{message}"
 storage:
   type: yaml
