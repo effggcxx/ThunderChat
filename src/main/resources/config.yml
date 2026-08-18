@@ -7,11 +7,11 @@ format:
   global: "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
   channels:
     local: "{prefix}&r{player}&7: &f{message}"
-    global: "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
-    staff: "&c[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
-    donator: "&6[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
-    admin: "&4[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
-    highrank: "&b[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
+    global: "<bold><c:dark_blue>GLOBAL<bold><c:aqua>Chat <bold><c:dark_gray>• &f{message}"
+    staff: "<bold><c:dark_purple>Staff<bold><c:light_purple>Chat <bold><c:dark_gray>• &f{message}"
+    donator: "<bold><c:dark_green>Donator<bold><c:green>Chat <bold><c:dark_gray>• &f{message}"
+    admin: "<bold><c:dark_red>Admin<bold><c:red>Chat <bold><c:dark_gray>• &f{message}"
+    highrank: "<bold><c:gold>HighRank<bold><c:yellow>Chat <bold><c:dark_gray>• &f{message}"
 network:
   enabled: true
   server-name: "skymine"
