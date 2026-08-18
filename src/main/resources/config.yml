@@ -134,7 +134,7 @@ alerts:
     caps: true
     swear: true
     advertisement: true
-    words: true
+    blocked-words: true
   format: "&c&l[ALERT]&r &c{type}&r &8| &7{server}&r &8| &f{player}&r &8| &7{message}"
 mentions:
   enabled: true
