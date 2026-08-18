@@ -97,7 +97,7 @@ own node names.
 
 | Permission | Default | Covers |
 |---|---|---|
-| `thunderchat.bypass.filter` | op | Bypasses spam, flood, swear, advertisement, and blocked-word filters entirely |
+| `thunderchat.bypass.filter` | op | Bypasses spam, flood, swear, and advertisement filters entirely |
 | `thunderchat.bypass.spam` | op | Bypasses spam detection only |
 | `thunderchat.bypass.flood` | op | Bypasses the anti-flood filter |
 | `thunderchat.bypass.caps` | op | Bypasses caps normalization |
@@ -109,7 +109,7 @@ own node names.
 | Permission | Default | Covers |
 |---|---|---|
 | `thunderchat.alert.*` | op | Receive every alert type below |
-| `thunderchat.alert.spam\|flood\|caps\|swear\|advertisement\|words` | op | Receive that specific alert type when a player trips the filter |
+| `thunderchat.alert.spam\|flood\|caps\|swear\|advertisement` | op | Receive that specific alert type when a player trips the filter |
 
 ### Chat visibility (`/chathide`)
 
@@ -149,8 +149,8 @@ a new gradient in code automatically gets a matching permission node.
 
 All of these run through `FilterManager` in one pipeline, checked in
 order (first match blocks the message): spam → flood → swear →
-advertisement → blocked words. `thunderchat.bypass.filter` skips all of
-them; the per-filter bypass permissions each skip just their one check.
+advertisement. `thunderchat.bypass.filter` skips all of them; the
+per-filter bypass permissions each skip just their one check.
 Caps handling is separate — see below.
 
 **Spam** scores a message against your previous one: higher similarity,
@@ -170,10 +170,9 @@ it, your streak resets and the new message is compared against nothing.
 letters long) and warns the sender, rather than rejecting it outright.
 `thunderchat.bypass.caps` skips this.
 
-**Swear** and **blocked words** both match against word lists in
-`config.yml` (`filter.swear.words` ships with English and Persian
-entries; `filter.words.blocked` starts empty). Multi-word phrases match
-on word boundaries; anything else matches as a plain substring.
+**Swear** matches the configurable word list in `filter.swear.words`,
+which ships with English and Persian entries. This is the single
+word-based moderation list; add or remove terms there as needed.
 
 **Advertisement** blocks IPv4 addresses, domain-shaped text
 (`something.tld`), and any name in `filter.advertisement.server-names` —
