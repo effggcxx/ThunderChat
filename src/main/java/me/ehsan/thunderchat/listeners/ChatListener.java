@@ -23,8 +23,9 @@ public class ChatListener implements Listener {
             event.setCancelled(true);
             final String formatMessage = message;
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (!plugin.getChatColorManager().isAwaitingCustomFormat(player)) return;
-                plugin.getChatColorManager().cancelCustomFormat(player);
+                // Atomically claim the one-shot prompt. This prevents two queued chat events
+                // from both consuming/applying a custom format.
+                if (!plugin.getChatColorManager().consumeAwaitingCustomFormat(player)) return;
                 if (!plugin.getChatColorManager().canUseCustom(player)) {
                     player.sendMessage(Component.text("You no longer have permission to use custom formatting.", NamedTextColor.RED));
                     return;
