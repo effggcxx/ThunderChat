@@ -80,7 +80,7 @@ permissions:
     description: Allows using custom MiniMessage chat formatting
     default: false
   thunderchat.msg:
-    description: Allows sending private messages
+    description: Allows sending and receiving private messages
     default: true
   thunderchat.ignore:
     description: Allows using the ignore system
@@ -172,7 +172,7 @@ permissions:
     description: Bypass global chat mutes
     default: op
   thunderchat.bypass.mute.local:
-    description: Bypass local gamemode chat mutes
+    description: Bypass local chat mutes
     default: op
   thunderchat.bypass.mute.staff:
     description: Bypass staff chat mutes
@@ -187,7 +187,7 @@ permissions:
     description: Bypass high-rank chat mutes
     default: op
   thunderchat.bypass.filter:
-    description: Bypass spam/caps/flood/blocked-word/advertisement filters
+    description: Bypass spam/caps/flood/swear/advertisement filters
     default: op
   thunderchat.bypass.spam:
     description: Bypass spam filter only
@@ -213,7 +213,6 @@ permissions:
       thunderchat.alert.caps: true
       thunderchat.alert.swear: true
       thunderchat.alert.advertisement: true
-      thunderchat.alert.blocked-words: true
   thunderchat.alert.spam:
     description: Receive spam detection alerts
     default: op
@@ -228,9 +227,6 @@ permissions:
     default: op
   thunderchat.alert.advertisement:
     description: Receive advertisement detection alerts
-    default: op
-  thunderchat.alert.blocked-words:
-    description: Receive blocked-word detection alerts
     default: op
   thunderchat.channelmutelist:
     description: View the list of globally muted channels and muted players
