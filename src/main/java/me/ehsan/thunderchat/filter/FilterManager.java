@@ -58,7 +58,7 @@ public class FilterManager {
         }
         if (containsBlockedWord(message) && !player.hasPermission("thunderchat.bypass.filter")) {
             player.sendMessage(ChatColor.RED + "Your message contains a blocked word.");
-            plugin.getAlertManager().alert("words", player, message); return true;
+            plugin.getAlertManager().alert("blocked-words", player, message); return true;
         }
         recordMessage(player.getUniqueId(), message);
         return false;
