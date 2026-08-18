@@ -5,13 +5,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-/** Chat filters: spam, flood, caps normalization, blocked words, swear words, and advertisements. */
+/** Chat filters: spam, flood, caps normalization, swear words, and advertisements. */
 public class FilterManager {
     private final ThunderChat plugin;
     private final Map<UUID, String> lastMessage = new ConcurrentHashMap<>();
@@ -55,10 +54,6 @@ public class FilterManager {
         if (containsAdvertisement(message) && !player.hasPermission("thunderchat.bypass.advertisement")) {
             player.sendMessage(ChatColor.RED + "Please don't advertise other Minecraft servers in chat.");
             plugin.getAlertManager().alert("advertisement", player, message); return true;
-        }
-        if (containsBlockedWord(message) && !player.hasPermission("thunderchat.bypass.filter")) {
-            player.sendMessage(ChatColor.RED + "Your message contains a blocked word.");
-            plugin.getAlertManager().alert("blocked-words", player, message); return true;
         }
         recordMessage(player.getUniqueId(), message);
         return false;
@@ -135,15 +130,6 @@ public class FilterManager {
             String candidate = normalizeForFilter(name).trim();
             if (!candidate.isEmpty() && normalized.contains(candidate)) return true;
         }
-        return false;
-    }
-
-    public boolean containsBlockedWord(String message) {
-        if (!plugin.getPluginConfig().getBoolean("filter.words.enabled", true)) return false;
-        List<String> blocked = plugin.getPluginConfig().getStringList("filter.words.blocked");
-        if (blocked == null || blocked.isEmpty()) return false;
-        String lower = normalizeForFilter(message);
-        for (String word : blocked) if (word != null && !word.isBlank() && lower.contains(normalizeForFilter(word).trim())) return true;
         return false;
     }
 
