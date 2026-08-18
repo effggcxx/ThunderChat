@@ -74,14 +74,14 @@ public final class SpyManager {
                 || source.hasPermission("thunderchat.bypass.spy")
                 || target.hasPermission("thunderchat.bypass.spy")) return;
         String output = format("PM", source.getName() + " -> " + target.getName(), source.getName(), message);
-        sendLocal(Section.PRIVATE_MESSAGES, output);
+        sendLocal(Section.PRIVATE_MESSAGES, output, source.getUniqueId());
     }
 
     public void spyCommand(Player source, String command) {
         if (!plugin.getPluginConfig().getBoolean("spy.enabled", true)
                 || source.hasPermission("thunderchat.bypass.spy")) return;
         String output = format("COMMAND", "", source.getName(), "/" + command);
-        sendLocal(Section.COMMANDS, output);
+        sendLocal(Section.COMMANDS, output, source.getUniqueId());
     }
 
     private String format(String type, String channel, String player, String message) {
@@ -99,9 +99,11 @@ public final class SpyManager {
                 .replace("{message}", message));
     }
 
-    private void sendLocal(Section section, String message) {
+    private void sendLocal(Section section, String message, UUID sourceId) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (isEnabled(player, section) && canSpy(player)) player.sendMessage(message);
+            if (!player.getUniqueId().equals(sourceId) && isEnabled(player, section) && canSpy(player)) {
+                player.sendMessage(message);
+            }
         }
     }
 
