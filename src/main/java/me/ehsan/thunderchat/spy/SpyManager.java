@@ -10,7 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/** Local-only command and private-message spy state. */
+/** Local-only command, private-message, anvil, sign and book spy state. */
 public final class SpyManager {
     private final ThunderChat plugin;
     private final Map<UUID, EnumSet<Section>> enabled = new HashMap<>();
@@ -18,7 +18,7 @@ public final class SpyManager {
     private final File file;
     private YamlConfiguration data;
 
-    public enum Section { COMMANDS, PRIVATE_MESSAGES }
+    public enum Section { COMMANDS, PRIVATE_MESSAGES, ANVILS, SIGNS, BOOKS }
 
     public SpyManager(ThunderChat plugin) {
         this.plugin = plugin;
@@ -30,13 +30,21 @@ public final class SpyManager {
         return player.hasPermission("thunderchat.command.spy");
     }
 
+    public boolean canSpySection(Player player, Section section) {
+        if (!canSpy(player)) return false;
+        return player.hasPermission("thunderchat.spy.*")
+                || player.hasPermission("thunderchat.spy." + section.name().toLowerCase().replace('_', '-'));
+    }
+
     public boolean isEnabled(Player player, Section section) {
         return enabled.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Section.class)).contains(section);
     }
 
     public void enableAll(Player player) {
         if (!canSpy(player)) return;
-        enabled.put(player.getUniqueId(), EnumSet.allOf(Section.class));
+        EnumSet<Section> allowed = EnumSet.noneOf(Section.class);
+        for (Section section : Section.values()) if (canSpySection(player, section)) allowed.add(section);
+        enabled.put(player.getUniqueId(), allowed);
         initialized.add(player.getUniqueId());
         save();
     }
@@ -48,7 +56,7 @@ public final class SpyManager {
     }
 
     public void toggle(Player player, Section section) {
-        if (!canSpy(player)) return;
+        if (!canSpySection(player, section)) return;
         EnumSet<Section> set = enabled.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Section.class));
         if (!set.remove(section)) set.add(section);
         initialized.add(player.getUniqueId());
@@ -66,7 +74,10 @@ public final class SpyManager {
 
     public String status(Player player) {
         return "commands=" + isEnabled(player, Section.COMMANDS)
-                + ", private-messages=" + isEnabled(player, Section.PRIVATE_MESSAGES);
+                + ", private-messages=" + isEnabled(player, Section.PRIVATE_MESSAGES)
+                + ", anvils=" + isEnabled(player, Section.ANVILS)
+                + ", signs=" + isEnabled(player, Section.SIGNS)
+                + ", books=" + isEnabled(player, Section.BOOKS);
     }
 
     public void spyPrivateMessage(Player source, Player target, String message) {
@@ -84,12 +95,37 @@ public final class SpyManager {
         sendLocal(Section.COMMANDS, output, source.getUniqueId());
     }
 
+    public void spyAnvil(Player source, String text) {
+        spyInput(source, Section.ANVILS, "ANVIL", text);
+    }
+
+    public void spySign(Player source, String text) {
+        spyInput(source, Section.SIGNS, "SIGN", text);
+    }
+
+    public void spyBook(Player source, String text) {
+        spyInput(source, Section.BOOKS, "BOOK", text);
+    }
+
+    private void spyInput(Player source, Section section, String type, String message) {
+        if (!plugin.getPluginConfig().getBoolean("spy.enabled", true)
+                || source.hasPermission("thunderchat.bypass.spy")
+                || !canSpySection(source, section)) return;
+        String output = format(type, "", source.getName(), message);
+        sendLocal(section, output, source.getUniqueId());
+    }
+
     private String format(String type, String channel, String player, String message) {
         String format = plugin.getPluginConfig().getString(
-                "spy." + (type.equals("PM") ? "private-message-format" : "command-format"),
-                type.equals("PM")
-                        ? "&8[&7SPY&r&8] &7{player} &8---> &7{target} &8: &7{message}"
-                        : "&8[&7SPY&r&8] &7{player} &8: &7{message}"
+                "spy." + switch (type) {
+                    case "PM" -> "private-message-format";
+                    case "COMMAND" -> "command-format";
+                    case "ANVIL" -> "anvil-format";
+                    case "SIGN" -> "sign-format";
+                    case "BOOK" -> "book-format";
+                    default -> "command-format";
+                },
+                "&8[&7SPY&r&8] &7{player}&r &8: &7{message}"
         );
         return ChatColor.translateAlternateColorCodes('&', format
                 .replace("{type}", type)
@@ -101,7 +137,7 @@ public final class SpyManager {
 
     private void sendLocal(Section section, String message, UUID sourceId) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!player.getUniqueId().equals(sourceId) && isEnabled(player, section) && canSpy(player)) {
+            if (!player.getUniqueId().equals(sourceId) && isEnabled(player, section) && canSpySection(player, section)) {
                 player.sendMessage(message);
             }
         }
