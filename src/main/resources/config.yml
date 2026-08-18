@@ -149,3 +149,27 @@ spy:
   book-format: "&8[&7SPY&r&8] &7{player}&r &8wrote in a book: &f{message}"
 storage:
   type: yaml
+# Online player lists for staff / highrank / admin / donator channels
+# Placeholders supported in format: %luckperms_prefix% (or %luckpermsprefix%),
+# %player%, %server_name% (or %server name% / %server%), plus any PlaceholderAPI placeholders.
+lists:
+  staff:
+    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
+    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    nobody: " &7There is no staff &donline&7."
+  highrank:
+    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
+    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    nobody: " &7There is no highrank &donline&7."
+  admin:
+    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
+    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    nobody: " &7There is no admin &donline&7."
+  donator:
+    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
+    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
+    nobody: " &7There is no donator &donline&7."

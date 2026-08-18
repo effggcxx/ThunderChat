@@ -36,6 +36,13 @@ public final class ThunderChatTabCompleter implements TabCompleter {
             }
         }
         if (name.equals("thunderchat")) return filter(args, List.of("reload", "info"));
+        // ========== ADDED ==========
+        if (name.equals("stafflist") || name.equals("highranklist") || name.equals("adminlist") || name.equals("donatorlist")
+                || name.equals("staff") || name.equals("highrank") || name.equals("admin") || name.equals("donator")
+                || name.equals("slist") || name.equals("hlist") || name.equals("alist") || name.equals("dlist")) {
+            return filter(args, List.of("list"));
+        }
+        // ===========================
         if (name.equals("ignore") || name.equals("unignore")) return playerNames(args.length == 0 ? "" : args[args.length - 1]);
         if (name.equals("msg")) return args.length <= 1 ? playerNames(args.length == 0 ? "" : args[0]) : Collections.emptyList();
         return Collections.emptyList();

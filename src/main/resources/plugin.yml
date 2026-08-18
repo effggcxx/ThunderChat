@@ -63,6 +63,22 @@ commands:
     description: Reload config / admin subcommands
     usage: /thunderchat <reload>
     aliases: [tc]
+    stafflist:
+    description: List online players with staff chat permission
+    usage: /stafflist [list]
+    aliases: [slist, staff]
+  highranklist:
+    description: List online players with high-rank chat permission
+    usage: /highranklist [list]
+    aliases: [hlist, highrank]
+  adminlist:
+    description: List online players with admin chat permission
+    usage: /adminlist [list]
+    aliases: [alist, admin]
+  donatorlist:
+    description: List online players with donator chat permission
+    usage: /donatorlist [list]
+    aliases: [dlist, donator]
 
 permissions:
   thunderchat.admin:

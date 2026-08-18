@@ -16,6 +16,7 @@ import me.ehsan.thunderchat.commands.MsgCommand;
 import me.ehsan.thunderchat.commands.ReplyCommand;
 import me.ehsan.thunderchat.commands.SpyCommand;
 import me.ehsan.thunderchat.commands.ThunderChatCommand;
+import me.ehsan.thunderchat.commands.ChannelListCommand;          // <-- ADDED
 import me.ehsan.thunderchat.commands.ThunderChatTabCompleter;
 import me.ehsan.thunderchat.filter.CapsManager;
 import me.ehsan.thunderchat.filter.FilterManager;
@@ -45,8 +46,16 @@ public final class ThunderChat extends JavaPlugin {
         getCommand("msg").setExecutor(new MsgCommand(this)); getCommand("reply").setExecutor(new ReplyCommand(this)); IgnoreCommand ignoreCmd = new IgnoreCommand(this); getCommand("ignore").setExecutor(ignoreCmd); getCommand("unignore").setExecutor(ignoreCmd);
         getCommand("channel").setExecutor(new ChannelCommand(this)); getCommand("channelmutelist").setExecutor(new ChannelMuteListCommand(this)); getCommand("clearchat").setExecutor(new ClearChatCommand(this)); getCommand("thunderchat").setExecutor(new ThunderChatCommand(this)); getCommand("chat").setExecutor(new ChatChannelCommand(this, null)); getCommand("chathide").setExecutor(new ChatHideCommand(this));
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF)); getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR)); getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN)); getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK)); getCommand("gc").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL)); getCommand("spy").setExecutor(new SpyCommand(this));
+        // ========== ADDED (list commands) ==========
+        getCommand("stafflist").setExecutor(new ChannelListCommand(this, Channel.STAFF));
+        getCommand("highranklist").setExecutor(new ChannelListCommand(this, Channel.HIGHRANK));
+        getCommand("adminlist").setExecutor(new ChannelListCommand(this, Channel.ADMIN));
+        getCommand("donatorlist").setExecutor(new ChannelListCommand(this, Channel.DONATOR));
+        // ===========================================
         ChatColorCommand chatColorCommand = new ChatColorCommand(chatColorManager); getCommand("chatcolor").setExecutor(chatColorCommand); getServer().getPluginManager().registerEvents(new ChatColorListener(this, chatColorManager, chatColorCommand), this);
-        ThunderChatTabCompleter completer = new ThunderChatTabCompleter(); String[] completable = {"msg", "ignore", "unignore", "channel", "channelmutelist", "clearchat", "chathide", "chat", "spy", "thunderchat", "chatcolor"}; for (String commandName : completable) { PluginCommand command = getCommand(commandName); if (command != null) command.setTabCompleter(completer); }
+        // ========== CHANGED (completable array) ==========
+        ThunderChatTabCompleter completer = new ThunderChatTabCompleter(); String[] completable = {"msg", "ignore", "unignore", "channel", "channelmutelist", "clearchat", "chathide", "chat", "spy", "thunderchat", "chatcolor", "stafflist", "highranklist", "adminlist", "donatorlist"}; for (String commandName : completable) { PluginCommand command = getCommand(commandName); if (command != null) command.setTabCompleter(completer); }
+        // ==================================================
         printEnableBanner();
     }
     private void registerChatColorPermissions() {
