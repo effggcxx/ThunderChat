@@ -53,8 +53,8 @@ commands:
     usage: /channelmutelist [page]
     aliases: [cml, mutelist]
   spy:
-    description: Monitor commands and private messages locally
-    usage: /spy <on|off|status|toggle> [commands|private-messages]
+    description: Monitor commands, private messages, anvils, signs and books locally
+    usage: /spy <on|off|status|toggle> [commands|private-messages|anvils|signs|books]
   chatcolor:
     description: Open the Chat Color menu
     usage: /chatcolor
@@ -88,8 +88,32 @@ permissions:
   thunderchat.command.spy:
     description: Allows using the /spy command
     default: op
+  thunderchat.spy.*:
+    description: Allows spying on every supported input type
+    default: op
+    children:
+      thunderchat.spy.commands: true
+      thunderchat.spy.private-messages: true
+      thunderchat.spy.anvils: true
+      thunderchat.spy.signs: true
+      thunderchat.spy.books: true
+  thunderchat.spy.commands:
+    description: Allows spying on player commands
+    default: op
+  thunderchat.spy.private-messages:
+    description: Allows spying on private messages
+    default: op
+  thunderchat.spy.anvils:
+    description: Allows spying on anvil renames
+    default: op
+  thunderchat.spy.signs:
+    description: Allows spying on sign text
+    default: op
+  thunderchat.spy.books:
+    description: Allows spying on book text
+    default: op
   thunderchat.spy.autoenable:
-    description: Automatically enable both local spy sections on first join
+    description: Automatically enable all permitted local spy sections on first join
     default: op
   thunderchat.bypass.spy:
     description: Prevents this player's commands and private messages from being spied on
