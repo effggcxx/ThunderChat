@@ -25,6 +25,7 @@ import me.ehsan.thunderchat.messaging.IgnoreManager;
 import me.ehsan.thunderchat.messaging.PrivateMessageManager;
 import me.ehsan.thunderchat.muting.MuteManager;
 import me.ehsan.thunderchat.network.NetworkMessenger;
+import me.ehsan.thunderchat.spy.SpyInputListener;
 import me.ehsan.thunderchat.spy.SpyListener;
 import me.ehsan.thunderchat.spy.SpyManager;
 import org.bukkit.ChatColor;
@@ -40,7 +41,7 @@ public final class ThunderChat extends JavaPlugin {
     @Override public void onEnable() {
         instance = this; loadPluginConfig(); this.networkMessenger = new NetworkMessenger(this);
         this.muteManager = new MuteManager(this); this.globalChatManager = new GlobalChatManager(this); this.alertManager = new AlertManager(this); this.filterManager = new FilterManager(this); this.capsManager = new CapsManager(this); this.messageManager = new PrivateMessageManager(this); this.ignoreManager = new IgnoreManager(this); this.spyManager = new SpyManager(this); this.chatColorManager = new ChatColorManager(this); registerChatColorPermissions();
-        getServer().getPluginManager().registerEvents(new ChatListener(this), this); getServer().getPluginManager().registerEvents(new SpyListener(this), this); getServer().getPluginManager().registerEvents(new PlayerStateListener(this), this);
+        getServer().getPluginManager().registerEvents(new ChatListener(this), this); getServer().getPluginManager().registerEvents(new SpyListener(this), this); getServer().getPluginManager().registerEvents(new SpyInputListener(this), this); getServer().getPluginManager().registerEvents(new PlayerStateListener(this), this);
         getCommand("msg").setExecutor(new MsgCommand(this)); getCommand("reply").setExecutor(new ReplyCommand(this)); IgnoreCommand ignoreCmd = new IgnoreCommand(this); getCommand("ignore").setExecutor(ignoreCmd); getCommand("unignore").setExecutor(ignoreCmd);
         getCommand("channel").setExecutor(new ChannelCommand(this)); getCommand("channelmutelist").setExecutor(new ChannelMuteListCommand(this)); getCommand("clearchat").setExecutor(new ClearChatCommand(this)); getCommand("thunderchat").setExecutor(new ThunderChatCommand(this)); getCommand("chat").setExecutor(new ChatChannelCommand(this, null)); getCommand("chathide").setExecutor(new ChatHideCommand(this));
         getCommand("staffchat").setExecutor(new ChatChannelCommand(this, Channel.STAFF)); getCommand("donatorchat").setExecutor(new ChatChannelCommand(this, Channel.DONATOR)); getCommand("adminchat").setExecutor(new ChatChannelCommand(this, Channel.ADMIN)); getCommand("highrankchat").setExecutor(new ChatChannelCommand(this, Channel.HIGHRANK)); getCommand("gc").setExecutor(new ChatChannelCommand(this, Channel.GLOBAL)); getCommand("spy").setExecutor(new SpyCommand(this));
