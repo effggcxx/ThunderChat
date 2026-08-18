@@ -6,7 +6,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -25,15 +24,16 @@ public final class ThunderChatTabCompleter implements TabCompleter {
         }
         if (name.equals("chat")) {
             if (args.length <= 1) return filter(args, List.of("clear", "mute", "unmute"));
-            if (args.length == 2 && !args[0].equalsIgnoreCase("clear")) return filter(args, CHANNELS);
-            if (args.length == 2 && args[0].equalsIgnoreCase("clear")) return filter(args, CHANNELS);
+            if (args.length == 2) return filter(args, CHANNELS);
             if (args.length >= 3) return playerNames(args[args.length - 1]);
         }
         if (name.equals("clearchat")) return filter(args, CHANNELS);
         if (name.equals("channelmutelist")) return args.length == 1 ? List.of("1", "2", "3") : Collections.emptyList();
         if (name.equals("spy")) {
             if (args.length <= 1) return filter(args, List.of("on", "off", "status", "toggle"));
-            if (args.length == 2 && args[0].equalsIgnoreCase("toggle")) return filter(args, List.of("commands", "private-messages"));
+            if (args.length == 2 && args[0].equalsIgnoreCase("toggle")) {
+                return filter(args, List.of("commands", "private-messages", "anvils", "signs", "books"));
+            }
         }
         if (name.equals("thunderchat")) return filter(args, List.of("reload", "info"));
         if (name.equals("ignore") || name.equals("unignore")) return playerNames(args.length == 0 ? "" : args[args.length - 1]);
