@@ -1,16 +1,33 @@
 package me.ehsan.thunderchat.commands;
 
 import me.ehsan.thunderchat.ThunderChat;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
 import java.util.Map;
+import java.util.UUID;
 
 public class ThunderChatCommand implements CommandExecutor {
     private final ThunderChat plugin;
     public ThunderChatCommand(ThunderChat plugin) { this.plugin = plugin; }
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length > 0 && args[0].equalsIgnoreCase("help")) { showHelp(sender, args.length > 1 ? parsePage(args[1]) : 1); return true; }
+        if (args.length > 1 && args[0].equalsIgnoreCase("inventory")) {
+            if (!(sender instanceof Player viewer)) return true;
+            if (!viewer.hasPermission("thunderchat.interactive.inventory")) return true;
+            try {
+                UUID targetId = UUID.fromString(args[1]);
+                if (!plugin.getInteractiveChatManager().openInventory(viewer, targetId)) {
+                    plugin.getMessagesManager().send(viewer, "interactive.inventory-offline", "<red>That player is no longer online.");
+                }
+            } catch (IllegalArgumentException ignored) {
+                plugin.getMessagesManager().send(viewer, "interactive.invalid-inventory", "<red>That inventory link is invalid.");
+            }
+            return true;
+        }
         if (!sender.hasPermission("thunderchat.admin")) { plugin.getMessagesManager().send(sender, "errors.no-permission", "<red>You don't have permission to use this command."); return true; }
         if (args.length == 0 || args[0].equalsIgnoreCase("info")) {
             plugin.getMessagesManager().send(sender, "admin.title", "<gold><bold>ThunderChat</bold></gold>");
