@@ -63,7 +63,7 @@ commands:
     description: Reload config / admin subcommands
     usage: /thunderchat <reload>
     aliases: [tc]
-    stafflist:
+  stafflist:
     description: List online players with staff chat permission
     usage: /stafflist [list]
     aliases: [slist, staff]
