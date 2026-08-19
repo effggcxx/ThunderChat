@@ -13,6 +13,17 @@ The InteractiveChat project provides item, inventory, ender-chest, player-name, 
 
 Where source code from InteractiveChat is incorporated or modified in ThunderChat, the relevant source files are marked as modified GPLv3-derived work and remain available under GPLv3.
 
+## CleanStaffChat
+
+ThunderChat's staff-list presentation was inspired by the visual/configuration style of **CleanStaffChat** by frafol. We use this as a design reference; no CleanStaffChat source code is claimed as part of ThunderChat.
+
+- Project: https://github.com/frafol/CleanStaffChat
+- Author: frafol
+- Modrinth: https://modrinth.com/plugin/cleanstaffchat
+- License: Custom license as published by the author
+
+The staff-list formatting in `messages.yml` is ThunderChat's own implementation and remains part of ThunderChat's GPLv3 codebase.
+
 ## License compatibility
 
-ThunderChat is distributed under **GNU GPLv3**, matching InteractiveChat's project license. See `LICENSE` for the license terms.
+ThunderChat is distributed under **GNU GPLv3**. See `LICENSE` for the license terms and the notices above for third-party attribution.
