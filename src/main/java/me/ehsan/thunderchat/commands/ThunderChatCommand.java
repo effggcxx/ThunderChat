@@ -10,6 +10,7 @@ public class ThunderChatCommand implements CommandExecutor {
     private final ThunderChat plugin;
     public ThunderChatCommand(ThunderChat plugin) { this.plugin = plugin; }
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("help")) { showHelp(sender, args.length > 1 ? parsePage(args[1]) : 1); return true; }
         if (!sender.hasPermission("thunderchat.admin")) { plugin.getMessagesManager().send(sender, "errors.no-permission", "<red>You don't have permission to use this command."); return true; }
         if (args.length == 0 || args[0].equalsIgnoreCase("info")) {
             plugin.getMessagesManager().send(sender, "admin.title", "<gold><bold>ThunderChat</bold></gold>");
@@ -17,7 +18,6 @@ public class ThunderChatCommand implements CommandExecutor {
             plugin.getMessagesManager().send(sender, "admin.info-status", "<gray>Channels: <white>{channels}</white> <gray>| Filters: <white>{filters}</white>", Map.of("channels", 6, "filters", plugin.getFilterManager().isEnabled() ? plugin.getMessagesManager().raw("admin.filters-enabled", "enabled") : plugin.getMessagesManager().raw("admin.filters-disabled", "disabled")));
             plugin.getMessagesManager().send(sender, "admin.info-reload", "<gray>Use <white>/thunderchat reload</white> <gray>to reload configuration."); return true;
         }
-        if (args[0].equalsIgnoreCase("help")) { showHelp(sender, args.length > 1 ? parsePage(args[1]) : 1); return true; }
         if (args[0].equalsIgnoreCase("reload")) { plugin.loadPluginConfig(); plugin.getMuteManager().reload(); plugin.getMessagesManager().send(sender, "admin.reload-success", "<green>Configuration and persistent mute data reloaded."); return true; }
         plugin.getMessagesManager().send(sender, "admin.usage", "<red>Usage: /thunderchat <reload|info|help> [page]"); return true;
     }
