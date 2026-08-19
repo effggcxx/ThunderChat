@@ -27,6 +27,15 @@ public final class NetworkMessenger implements PluginMessageListener {
         queueForConfiguredBackends(payload);
     }
 
+    public void sendPrivateMessage(Player carrier, UUID senderId, String senderName, String targetName, UUID targetId, String message) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.writeInt(1); out.writeUTF("PM"); out.writeUTF(senderId.toString()); out.writeUTF(senderName);
+        out.writeBoolean(targetId != null); if (targetId != null) out.writeUTF(targetId.toString());
+        out.writeUTF(targetName); out.writeUTF(message); out.flush();
+        forwardAll(carrier, bytes.toByteArray());
+    }
+
     private void sendRaw(Player carrier, byte[] payload) throws IOException {
         ByteArrayOutputStream outerBytes = new ByteArrayOutputStream();
         DataOutputStream outer = new DataOutputStream(outerBytes);
@@ -47,43 +56,22 @@ public final class NetworkMessenger implements PluginMessageListener {
         dispatch(data, source);
     }
 
-    /** Dispatches a raw Bungee Forward packet. Used by the MySQL queue on player join. */
-    public void dispatch(byte[] data) {
-        dispatch(data, null);
-    }
+    public void dispatch(byte[] data) { dispatch(data, null); }
 
     private void dispatch(byte[] data, Player source) {
         try {
             DataInputStream outer = new DataInputStream(new ByteArrayInputStream(data));
             if (!"ThunderChat".equals(readUtfBounded(outer, 64))) return;
-            int length = outer.readUnsignedShort();
-            if (length <= 0 || length > outer.available()) return;
-            byte[] payload = outer.readNBytes(length);
-            DataInputStream packet = new DataInputStream(new ByteArrayInputStream(payload));
-            if (packet.readInt() != 1) return;
-            String kind = readUtfBounded(packet, 32);
+            int length = outer.readUnsignedShort(); if (length <= 0 || length > outer.available()) return;
+            byte[] payload = outer.readNBytes(length); DataInputStream packet = new DataInputStream(new ByteArrayInputStream(payload));
+            if (packet.readInt() != 1) return; String kind = readUtfBounded(packet, 32);
             if ("MUTE".equals(kind)) { plugin.getMuteManager().onNetworkPacket("BungeeCord", source, payload); return; }
             if ("PM".equals(kind)) { plugin.getMessageManager().onNetworkPacket(payload); return; }
             if ("CHAT".equals(kind) || "CLEAR".equals(kind) || "ALERT".equals(kind)) plugin.getGlobalChatManager().onNetworkPacket("BungeeCord", source, payload);
-        } catch (IOException | RuntimeException e) {
-            plugin.getLogger().warning("Malformed ThunderChat network packet: " + e.getMessage());
-        }
+        } catch (IOException | RuntimeException e) { plugin.getLogger().warning("Malformed ThunderChat network packet: " + e.getMessage()); }
     }
 
-    private String readUtfBounded(DataInputStream input, int max) throws IOException {
-        String value = input.readUTF();
-        if (value.length() > max) throw new IOException("network string too long");
-        return value;
-    }
-
-    public void drainQueuedPackets() {
-        if (!plugin.getStorage().isEnabled()) return;
-        String server = plugin.getPluginConfig().getString("network.server-name", "server");
-        plugin.getStorage().drainNetwork(server, this::dispatch);
-    }
-
-    public void close() {
-        plugin.getServer().getMessenger().unregisterIncomingPluginChannel(plugin, CHANNEL, this);
-        plugin.getServer().getMessenger().unregisterOutgoingPluginChannel(plugin, CHANNEL);
-    }
+    private String readUtfBounded(DataInputStream input, int max) throws IOException { String value = input.readUTF(); if (value.length() > max) throw new IOException("network string too long"); return value; }
+    public void drainQueuedPackets() { if (!plugin.getStorage().isEnabled()) return; String server = plugin.getPluginConfig().getString("network.server-name", "server"); plugin.getStorage().drainNetwork(server, this::dispatch); }
+    public void close() { plugin.getServer().getMessenger().unregisterIncomingPluginChannel(plugin, CHANNEL, this); plugin.getServer().getMessenger().unregisterOutgoingPluginChannel(plugin, CHANNEL); }
 }
