@@ -173,3 +173,52 @@ lists:
     format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
     footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
     nobody: " &7There is no donator &donline&7."
+
+# InteractiveChat-style ecosystem. This is behavior/configuration, not player-facing text.
+interactive:
+  enabled: true
+  max-placeholders: 12
+  universal-cooldown: 0
+  item:
+    enabled: true
+    click-enabled: true
+    cooldown: 0
+  inventory:
+    enabled: true
+    cooldown: 0
+  ender:
+    enabled: true
+    cooldown: 0
+  player:
+    enabled: true
+    case-sensitive: true
+    hover-enabled: true
+    click-enabled: true
+  commands:
+    enabled: true
+    format: "<aqua>[<yellow>{command}</yellow>]</aqua>"
+    hover: "<yellow>Click to suggest <white>{command}</white>.</yellow>"
+  position:
+    enabled: true
+  ping:
+    enabled: true
+  custom-placeholders:
+    # Each entry is regex-based, similar to InteractiveChat custom placeholders.
+    # 'replace' supports PlaceholderAPI when PlaceholderAPI is installed.
+    # 'cooldown' is per-player and measured in seconds.
+    server:
+      keyword: "(?i)\\[server\\]"
+      replace: "<aqua>%server_name%</aqua>"
+      cooldown: 0
+    world:
+      keyword: "(?i)\\[world\\]"
+      replace: "<green>%player_world%</green>"
+      cooldown: 0
+    time:
+      keyword: "(?i)\\[time\\]"
+      replace: "<yellow>%server_time_HH:mm:ss%</yellow>"
+      cooldown: 0
+    pos:
+      keyword: "(?i)\\[position\\]"
+      replace: "<aqua>%player_world%</aqua> <white>%player_x%</white>, <white>%player_y%</white>, <white>%player_z%</white>"
+      cooldown: 0
