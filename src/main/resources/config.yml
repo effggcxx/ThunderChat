@@ -141,17 +141,22 @@ ignore:
 spy:
   enabled: true
   autoenable: true
-  # {type} remains available for custom formats. It is intentionally omitted from the defaults.
   private-message-format: "&8[&7SPY&r&8] &7{player}&r &8---> &7{target}&r &8: &7{message}"
   command-format: "&8[&7SPY&r&8] &7{player}&r &8: &7{message}"
   anvil-format: "&8[&7SPY&r&8] &7{player}&r &8renamed an item to: &f{message}"
   sign-format: "&8[&7SPY&r&8] &7{player}&r &8wrote on a sign: &f{message}"
   book-format: "&8[&7SPY&r&8] &7{player}&r &8wrote in a book: &f{message}"
 storage:
-  type: yaml
-# Online player lists for staff / highrank / admin / donator channels
-# Placeholders supported in format: %luckperms_prefix% (or %luckpermsprefix%),
-# %player%, %server_name% (or %server name% / %server%), plus any PlaceholderAPI placeholders.
+  type: mysql
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    database: "thunderchat"
+    username: "root"
+    password: "change-me"
+    pool-size: 4
+    # Persistent state is cached in memory and written asynchronously in batches.
+    # Legacy YAML files are imported by each manager when its MySQL record is absent.
 lists:
   staff:
     header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
@@ -173,8 +178,6 @@ lists:
     format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
     footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
     nobody: " &7There is no donator &donline&7."
-
-# InteractiveChat-style ecosystem. This is behavior/configuration, not player-facing text.
 interactive:
   enabled: true
   max-placeholders: 12
@@ -203,9 +206,6 @@ interactive:
   ping:
     enabled: true
   custom-placeholders:
-    # Each entry is regex-based, similar to InteractiveChat custom placeholders.
-    # 'replace' supports PlaceholderAPI when PlaceholderAPI is installed.
-    # 'cooldown' is per-player and measured in seconds.
     server:
       keyword: "(?i)\\[server\\]"
       replace: "<aqua>%server_name%</aqua>"
