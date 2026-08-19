@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /** Stores and applies the player's MiniMessage chat color, gradient, styles, and custom formatting. */
@@ -18,7 +19,15 @@ public final class ChatColorManager {
     public static final List<String> GRADIENTS = List.of("sunset", "ocean", "forest", "fire", "candy", "aurora", "rainbow");
     public static final List<String> STYLES = List.of("bold", "italic", "underlined", "strikethrough");
     private static final Pattern OBFUSCATED_TAG = Pattern.compile("<\\s*(?:obfuscated|obf)(?:\\s*[:>])", Pattern.CASE_INSENSITIVE);
-    private final ThunderChat plugin; private final Map<UUID, String> colors = new HashMap<>(); private final Map<UUID, String> gradients = new HashMap<>(); private final Map<UUID, EnumSet<Style>> styles = new HashMap<>(); private final Map<UUID, String> customFormats = new HashMap<>(); private final Set<UUID> awaitingCustomFormat = new HashSet<>(); private final File file; private final MiniMessage miniMessage = MiniMessage.miniMessage(); private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacyAmpersand();
+    private final ThunderChat plugin;
+    private final Map<UUID, String> colors = new ConcurrentHashMap<>();
+    private final Map<UUID, String> gradients = new ConcurrentHashMap<>();
+    private final Map<UUID, EnumSet<Style>> styles = new ConcurrentHashMap<>();
+    private final Map<UUID, String> customFormats = new ConcurrentHashMap<>();
+    private final Set<UUID> awaitingCustomFormat = ConcurrentHashMap.newKeySet();
+    private final File file;
+    private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacyAmpersand();
     public enum Style { BOLD, ITALIC, UNDERLINED, STRIKETHROUGH }
     public ChatColorManager(ThunderChat plugin) { this.plugin = plugin; this.file = new File(plugin.getDataFolder(), "chat-colors.yml"); load(); }
     public boolean canUse(Player player) { return player.hasPermission("thunderchat.chatcolor"); }
@@ -28,7 +37,6 @@ public final class ChatColorManager {
     public boolean canUseCustom(Player player) { return canUse(player) && (player.hasPermission("thunderchat.chatcolor.custom.*") || player.hasPermission("thunderchat.chatcolor.custom")); }
     public boolean isAwaitingCustomFormat(Player player) { return awaitingCustomFormat.contains(player.getUniqueId()); }
     public void beginCustomFormat(Player player) { awaitingCustomFormat.add(player.getUniqueId()); }
-    /** Atomically consumes the pending custom-format prompt so only one chat event can claim it. */
     public boolean consumeAwaitingCustomFormat(Player player) { return awaitingCustomFormat.remove(player.getUniqueId()); }
     public void cancelCustomFormat(Player player) { awaitingCustomFormat.remove(player.getUniqueId()); }
     public boolean isValidCustomFormat(String format) { if (format == null || format.isBlank() || OBFUSCATED_TAG.matcher(format).find()) return false; try { miniMessage.deserialize(format + "ThunderChat"); return true; } catch (RuntimeException ex) { return false; } }
@@ -39,12 +47,15 @@ public final class ChatColorManager {
     public void setGradient(Player player, String gradient) { gradients.put(player.getUniqueId(), gradient); colors.remove(player.getUniqueId()); customFormats.remove(player.getUniqueId()); save(); }
     public String getGradient(Player player) { return gradients.get(player.getUniqueId()); }
     public boolean hasStyle(Player player, String style) { try { return styles.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Style.class)).contains(Style.valueOf(style.toUpperCase(Locale.ROOT))); } catch (IllegalArgumentException e) { return false; } }
-    public void toggleStyle(Player player, String style) { try { Style value = Style.valueOf(style.toUpperCase(Locale.ROOT)); EnumSet<Style> selected = styles.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Style.class)); if (selected.contains(value)) selected.remove(value); else selected.add(value); if (selected.isEmpty()) styles.remove(player.getUniqueId()); customFormats.remove(player.getUniqueId()); save(); } catch (IllegalArgumentException ignored) { } }
+    public void toggleStyle(Player player, String style) { try { Style value = Style.valueOf(style.toUpperCase(Locale.ROOT)); EnumSet<Style> selected = styles.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Style.class)); synchronized (selected) { if (selected.contains(value)) selected.remove(value); else selected.add(value); if (selected.isEmpty()) styles.remove(player.getUniqueId()); } customFormats.remove(player.getUniqueId()); save(); } catch (IllegalArgumentException ignored) { } }
     public String colorize(Player player, String message) {
-        if (!canUse(player)) return message; String custom = getCustomFormat(player); if (custom != null && !custom.isBlank()) return legacy.serialize(miniMessage.deserialize(custom + miniMessage.escapeTags(message)));
+        if (!canUse(player)) return message;
+        String custom = getCustomFormat(player);
+        if (custom != null && !custom.isBlank()) return legacy.serialize(miniMessage.deserialize(custom + miniMessage.escapeTags(message)));
         StringBuilder tags = new StringBuilder(); String color = getColor(player); String gradient = getGradient(player); if (gradient != null) tags.append('<').append(gradientTag(gradient)).append('>'); else if (color != null && !"white".equalsIgnoreCase(color)) tags.append('<').append(color).append('>');
-        EnumSet<Style> selectedStyles = styles.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Style.class)); for (Style style : selectedStyles) tags.append('<').append(styleTag(style)).append('>'); if (tags.isEmpty()) return message;
-        StringBuilder closing = new StringBuilder(); List<Style> selected = new ArrayList<>(selectedStyles); for (int i = selected.size() - 1; i >= 0; i--) closing.append("</").append(styleTag(selected.get(i))).append('>'); if (gradient != null) closing.append("rainbow".equals(gradientTag(gradient)) ? "</rainbow>" : "</gradient>"); else if (color != null && !"white".equalsIgnoreCase(color)) closing.append("</").append(color).append('>');
+        EnumSet<Style> selectedStyles = styles.getOrDefault(player.getUniqueId(), EnumSet.noneOf(Style.class)); List<Style> selected; synchronized (selectedStyles) { selected = new ArrayList<>(selectedStyles); }
+        for (Style style : selected) tags.append('<').append(styleTag(style)).append('>'); if (tags.isEmpty()) return message;
+        StringBuilder closing = new StringBuilder(); for (int i = selected.size() - 1; i >= 0; i--) closing.append("</").append(styleTag(selected.get(i))).append('>'); if (gradient != null) closing.append("rainbow".equals(gradientTag(gradient)) ? "</rainbow>" : "</gradient>"); else if (color != null && !"white".equalsIgnoreCase(color)) closing.append("</").append(color).append('>');
         Component component = miniMessage.deserialize(tags + miniMessage.escapeTags(message) + closing); return legacy.serialize(component);
     }
     private String styleTag(Style style) { return switch (style) { case BOLD -> "bold"; case ITALIC -> "italic"; case UNDERLINED -> "underlined"; case STRIKETHROUGH -> "strikethrough"; }; }
@@ -52,5 +63,5 @@ public final class ChatColorManager {
     public void clear(Player player) { awaitingCustomFormat.remove(player.getUniqueId()); colors.remove(player.getUniqueId()); gradients.remove(player.getUniqueId()); customFormats.remove(player.getUniqueId()); styles.remove(player.getUniqueId()); save(); }
     public void clearRuntime(UUID id) { awaitingCustomFormat.remove(id); }
     private void load() { if (!file.exists()) return; YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file); if (yaml.getConfigurationSection("players") == null) return; for (String raw : yaml.getConfigurationSection("players").getKeys(false)) try { UUID id = UUID.fromString(raw); String color = yaml.getString("players." + raw + ".color"); if (color != null) colors.put(id, color); String gradient = yaml.getString("players." + raw + ".gradient"); if (gradient != null) gradients.put(id, gradient); String custom = yaml.getString("players." + raw + ".custom"); if (custom != null) customFormats.put(id, custom); EnumSet<Style> selected = EnumSet.noneOf(Style.class); for (String style : yaml.getStringList("players." + raw + ".styles")) try { selected.add(Style.valueOf(style.toUpperCase(Locale.ROOT))); } catch (IllegalArgumentException ignored) { } if (!selected.isEmpty()) styles.put(id, selected); } catch (IllegalArgumentException ignored) { } }
-    public synchronized void save() { if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs(); YamlConfiguration yaml = new YamlConfiguration(); Set<UUID> ids = new HashSet<>(); ids.addAll(colors.keySet()); ids.addAll(gradients.keySet()); ids.addAll(customFormats.keySet()); ids.addAll(styles.keySet()); for (UUID id : ids) { String path = "players." + id; yaml.set(path + ".color", colors.get(id)); yaml.set(path + ".gradient", gradients.get(id)); yaml.set(path + ".custom", customFormats.get(id)); yaml.set(path + ".styles", styles.getOrDefault(id, EnumSet.noneOf(Style.class)).stream().map(Enum::name).map(String::toLowerCase).toList()); } try { yaml.save(file); } catch (IOException e) { plugin.getLogger().warning("Could not save chat-colors.yml: " + e.getMessage()); } }
+    public synchronized void save() { if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs(); YamlConfiguration yaml = new YamlConfiguration(); Set<UUID> ids = new HashSet<>(); ids.addAll(colors.keySet()); ids.addAll(gradients.keySet()); ids.addAll(customFormats.keySet()); ids.addAll(styles.keySet()); for (UUID id : ids) { String path = "players." + id; yaml.set(path + ".color", colors.get(id)); yaml.set(path + ".gradient", gradients.get(id)); yaml.set(path + ".custom", customFormats.get(id)); EnumSet<Style> selected = styles.getOrDefault(id, EnumSet.noneOf(Style.class)); synchronized (selected) { yaml.set(path + ".styles", selected.stream().map(Enum::name).map(String::toLowerCase).toList()); } } try { yaml.save(file); } catch (IOException e) { plugin.getLogger().warning("Could not save chat-colors.yml: " + e.getMessage()); } }
 }
