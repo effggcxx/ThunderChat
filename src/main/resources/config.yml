@@ -15,6 +15,10 @@ format:
 network:
   enabled: true
   server-name: "skymine"
+  # Every backend using ThunderChat must be listed here for the MySQL fallback queue.
+  servers:
+    - "skymine"
+    - "bedwars"
 channels:
   default: local
   global:
@@ -156,7 +160,7 @@ storage:
     password: "change-me"
     pool-size: 4
     # Persistent state is cached in memory and written asynchronously in batches.
-    # Legacy YAML files are imported by each manager when its MySQL record is absent.
+    # Legacy YAML files are imported when a MySQL record is absent.
 lists:
   staff:
     header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
