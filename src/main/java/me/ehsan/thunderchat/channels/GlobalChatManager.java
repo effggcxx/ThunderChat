@@ -36,6 +36,7 @@ public final class GlobalChatManager implements PluginMessageListener {
     private final File stateFile;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacyAmpersand();
+    private final LegacyComponentSerializer legacyOutput = LegacyComponentSerializer.legacySection();
 
     public GlobalChatManager(ThunderChat plugin) { this.plugin = plugin; instance = this; this.stateFile = new File(plugin.getDataFolder(), "channel-state.yml"); loadState(); plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, "BungeeCord", this); }
     public static GlobalChatManager getInstance() { return instance; }
@@ -92,7 +93,7 @@ public final class GlobalChatManager implements PluginMessageListener {
         String miniFormat = resolved.replace("{prefix}", "<tc_prefix>").replace("{message}", "<tc_message>");
         try {
             Component component = miniMessage.deserialize(miniFormat, TagResolver.resolver(StandardTags.color(), StandardTags.decorations(), StandardTags.gradient(), resolver));
-            return legacy.serialize(component);
+            return legacyOutput.serialize(component);
         } catch (RuntimeException ex) {
             plugin.getLogger().warning("Invalid MiniMessage channel format: " + format + " (" + ex.getMessage() + ")");
             resolved = resolved.replace("{prefix}", prefix).replace("{message}", message);
