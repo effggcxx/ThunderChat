@@ -19,6 +19,8 @@ network:
   servers:
     - "skymine"
     - "bedwars"
+  # Packets remain available while a backend is empty. Set to 1440 for 24 hours.
+  queue-retention-minutes: 1440
 channels:
   default: local
   global:
