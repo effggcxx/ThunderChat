@@ -45,6 +45,7 @@ commands:
     aliases: [hc]
   gc:
     description: Toggle global chat
+    aliases: [globalchat]
   chat:
     description: Manage chat, defaulting to local chat
     usage: /chat <clear|mute|unmute> [channel] [player]
@@ -205,6 +206,29 @@ permissions:
   thunderchat.channel.highrank:
     description: Access to the network-wide high-rank channel
     default: false
+  thunderchat.list.hide.*:
+    description: Hide yourself from every staff/high-rank/admin/donator list
+    default: false
+    children:
+      thunderchat.list.hide.staff: true
+      thunderchat.list.hide.highrank: true
+      thunderchat.list.hide.admin: true
+      thunderchat.list.hide.donator: true
+  thunderchat.list.hide.staff:
+    description: Hide yourself from the staff list
+    default: false
+  thunderchat.list.hide.highrank:
+    description: Hide yourself from the high-rank list
+    default: false
+  thunderchat.list.hide.admin:
+    description: Hide yourself from the admin list
+    default: false
+  thunderchat.list.hide.donator:
+    description: Hide yourself from the donator list
+    default: false
+  thunderchat.bypass.list.hide:
+    description: See players who have chosen to hide from channel lists
+    default: op
   thunderchat.bypass.mute:
     description: Bypass all ThunderChat mutes
     default: op
