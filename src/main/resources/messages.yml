@@ -1,0 +1,75 @@
+# ThunderChat messages
+# All player-facing messages should be configured here.
+# MiniMessage is supported: <red>, <green>, <yellow>, <gray>, <bold>, <gradient:gold:red>...</gradient>, etc.
+# Placeholders use {placeholder} syntax. Unknown placeholders are left unchanged.
+#
+# Help pages are intentionally separate so server owners can completely rewrite the help text.
+# Add more pages by copying help.pages.<number> and increase help.max-page.
+
+prefix: "<gold><bold>ThunderChat</bold></gold> <dark_gray>»</dark_gray>"
+
+errors:
+  player-only: "<red>Only players can use this command.</red>"
+  no-permission: "<red>You don't have permission to use this command.</red>"
+  no-channel-permission: "<red>You don't have permission to use that chat channel.</red>"
+  unknown-channel: "<red>Unknown channel.</red>"
+  unknown-channel-detailed: "<red>Unknown chat channel. Use local, global, staff, donator, admin, or highrank.</red>"
+  invalid-usage: "<red>Usage: {usage}</red>"
+  player-unknown: "<red>That player is not known on this server.</red>"
+
+channel:
+  current: "<gray>Current channel: <yellow>{channel}</yellow>"
+  available: "<gray>Available channels:</gray>"
+  entry: "<gray> - <yellow>{channel}</yellow>{hidden}"
+  hidden-suffix: " <dark_gray>(hidden)</dark_gray>"
+  changed: "<green>Chat channel set to <yellow>{channel}</yellow><green>.</green>"
+  toggled: "<green>Chat channel: <yellow>{channel}</yellow><green>.</green>"
+
+chat:
+  usage: "<red>Usage: /chat <clear|mute|unmute> [channel] [player]</red>"
+  mute-usage: "<red>Usage: /chat {action} [channel] [player]</red>"
+  muted-global: "<green>{channel} CHAT {state} globally.</green>"
+  muted-player: "<green>{player} has been {state} in {channel} CHAT.</green>"
+  mute-state-muted: "muted"
+  mute-state-unmuted: "unmuted"
+  management-no-permission: "<red>You don't have permission to manage chat mutes.</red>"
+
+admin:
+  title: "<gold><bold>ThunderChat</bold></gold>"
+  info-version: "<gray>Version: <white>{version}</white>"
+  info-status: "<gray>Channels: <white>{channels}</white> <gray>| Filters: <white>{filters}</white>"
+  info-reload: "<gray>Use <white>/thunderchat reload</white> <gray>to reload configuration."
+  reload-success: "<green>Configuration and persistent mute data reloaded.</green>"
+  usage: "<red>Usage: /thunderchat <reload|info|help> [page]</red>"
+  filters-enabled: "enabled"
+  filters-disabled: "disabled"
+
+help:
+  title: "<gold><bold>ThunderChat Help</bold></gold> <dark_gray>({page}/{max_page})</dark_gray>"
+  max-page: 3
+  page-1:
+    - "<yellow>/chat <gray>- Manage your active/local chat and channel administration."
+    - "<yellow>/channel <gray>- Switch to a channel you have access to."
+    - "<yellow>/gc <gray>- Toggle global chat."
+    - "<yellow>/sc <gray>- Toggle staff chat."
+    - "<yellow>/dc <gray>- Toggle donator chat."
+    - "<yellow>/ac <gray>- Toggle admin chat."
+    - "<yellow>/hc <gray>- Toggle high-rank chat."
+    - "<yellow>/chathide <gray>- Hide channels from your chat view."
+  page-2:
+    - "<yellow>/msg <player> <message> <gray>- Send a private message."
+    - "<yellow>/reply <message> <gray>- Reply to your last private message."
+    - "<yellow>/ignore <player> <gray>- Ignore a player."
+    - "<yellow>/chatcolor <gray>- Open the chat color and formatting menu."
+    - "<yellow>/spy <gray>- Toggle the local spy sections you are permitted to use."
+    - "<yellow>/clearchat <channel> <gray>- Clear a channel's visible chat."
+  page-3:
+    - "<yellow>/channelmutelist <gray>- View channel mutes."
+    - "<yellow>/stafflist <gray>- List visible staff members."
+    - "<yellow>/donatorlist <gray>- List visible donators."
+    - "<yellow>/adminlist <gray>- List visible admins."
+    - "<yellow>/highranklist <gray>- List visible high-rank members."
+    - "<gray>Use <white>/thunderchat help <page></white> to browse pages."
+
+# Existing configurable message formats can be moved here over time without changing their keys.
+# Keep this file for player-facing text only; config.yml remains for behavior and feature settings.
