@@ -2,11 +2,9 @@
 # Every entry in this file is player-facing and can be customized.
 # MiniMessage is supported throughout this file.
 # Placeholders use {name} syntax. Unknown placeholders remain unchanged.
-#
-# Behavior belongs in config.yml. Player-facing text and display formats belong here.
+# Behavior belongs in config.yml; player-facing text and display formats belong here.
 
 prefix: "<gold><bold>ThunderChat</bold></gold> <dark_gray>»</dark_gray>"
-
 errors:
   player-only: "<red>Only players can use this command.</red>"
   no-permission: "<red>You don't have permission to use this command.</red>"
@@ -15,7 +13,15 @@ errors:
   unknown-channel-detailed: "<red>Unknown chat channel. Use local, global, staff, donator, admin, or highrank.</red>"
   invalid-usage: "<red>Usage: {usage}</red>"
   player-unknown: "<red>That player is not known on this server.</red>"
-
+pm:
+  no-permission: "<red>You don't have permission to do that.</red>"
+  disabled: "<red>Private messages are currently disabled.</red>"
+  usage: "<red>Usage: /{label} <player> <message></red>"
+  reply-usage: "<red>Usage: /{label} <message></red>"
+  target-offline: "<red>Player '{player}' is not online.</red>"
+  self: "<red>You can't message yourself.</red>"
+  no-reply: "<red>No one to reply to.</red>"
+  target-left: "<red>{player} is no longer online.</red>"
 channel:
   current: "<gray>Current channel: <yellow>{channel}</yellow>"
   available: "<gray>Available channels:</gray>"
@@ -23,7 +29,6 @@ channel:
   hidden-suffix: " <dark_gray>(hidden)</dark_gray>"
   changed: "<green>Chat channel set to <yellow>{channel}</yellow><green>.</green>"
   toggled: "<green>Chat channel: <yellow>{channel}</yellow><green>.</green>"
-
 chat:
   usage: "<red>Usage: /chat <clear|mute|unmute> [channel] [player]</red>"
   mute-usage: "<red>Usage: /chat {action} [channel] [player]</red>"
@@ -32,7 +37,6 @@ chat:
   mute-state-muted: "muted"
   mute-state-unmuted: "unmuted"
   management-no-permission: "<red>You don't have permission to manage chat mutes.</red>"
-
 admin:
   title: "<gold><bold>ThunderChat</bold></gold>"
   info-version: "<gray>Version: <white>{version}</white>"
@@ -42,18 +46,16 @@ admin:
   usage: "<red>Usage: /thunderchat <reload|info|help> [page]</red>"
   filters-enabled: "enabled"
   filters-disabled: "disabled"
-
 spy:
   no-permission: "<red>You don't have permission to spy.</red>"
   usage: "<red>Usage: /spy <on|off|status|toggle> [commands|private-messages|anvils|signs|books]</red>"
   toggle-usage: "<red>Usage: /spy toggle <commands|private-messages|anvils|signs|books></red>"
   enabled-all: "<green>Spy enabled for all available sections.</green>"
   disabled: "<yellow>Spy disabled.</yellow>"
-  status: "<gray>Spy status: <white>{status}"
+  status: "<gray>Spy status: <white>{status}</white>"
   unknown-section: "<red>Unknown spy section.</red>"
   section-no-permission: "<red>You don't have permission to spy on that input type.</red>"
   toggled: "<green>Spy {section} is now {state}.</green>"
-
 help:
   title: "<gold><bold>ThunderChat Help</bold></gold> <dark_gray>({page}/{max_page})</dark_gray>"
   max-page: 3
@@ -80,9 +82,6 @@ help:
     - "<yellow>/adminlist <gray>- List visible admins."
     - "<yellow>/highranklist <gray>- List visible high-rank members."
     - "<gray>Use <white>/thunderchat help <page></white> to browse pages."
-
-# Display formats moved from config.yml can be placed below these sections.
-# The migration keeps behavior settings in config.yml and makes all player-facing text editable here.
 formats:
   alert: "<red><bold>[ALERT]</bold></red> <red>{type}</red> <dark_gray>|</dark_gray> <gray>{server}</gray> <dark_gray>|</dark_gray> <white>{player}</white> <dark_gray>|</dark_gray> <gray>{message}</gray>"
   mention-highlight: "<yellow>"
