@@ -6,15 +6,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-/** Restores persistent channel state and clears transient runtime state. */
+/** Restores player state and drains network packets queued while this backend was empty. */
 public final class PlayerStateListener implements Listener {
     private final ThunderChat plugin;
-
     public PlayerStateListener(ThunderChat plugin) { this.plugin = plugin; }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         plugin.getGlobalChatManager().restorePlayer(event.getPlayer());
+        plugin.getNetworkMessenger().drainQueuedPackets();
     }
 
     @EventHandler
