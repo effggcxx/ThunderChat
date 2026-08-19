@@ -57,18 +57,22 @@ spy:
   section-no-permission: "<red>You don't have permission to spy on that input type.</red>"
   toggled: "<green>Spy {section} is now {state}.</green>"
 interactive:
-  # Text displayed when [item] or [i] is used while holding nothing.
+  # [item] / [i]
   item-empty: "<gray>[No item]</gray>"
-  # Visible text for the held-item placeholder. The actual item details appear on hover.
   item-text: "<aqua>[Item]</aqua>"
-  # Hover text for [item]/[i]. {item} is the display/material name and {amount} is the stack size.
   item-hover: "<yellow>{item}</yellow> <gray>x{amount}</gray>"
-  # Visible text for the inventory placeholder.
+  # [inv] / [inventory]
   inventory-text: "<aqua>[Inventory]</aqua>"
-  # Hover text for [inv]. {player} is the player whose inventory will be shown.
   inventory-hover: "<yellow>Click to view <white>{player}</white>'s inventory.</yellow>"
-  inventory-offline: "<red>That player is no longer online.</red>"
-  invalid-inventory: "<red>That inventory link is invalid.</red>"
+  # [ender] / [e]
+  ender-text: "<light_purple>[Ender Chest]</light_purple>"
+  ender-hover: "<yellow>Click to view <white>{player}</white>'s Ender Chest.</yellow>"
+  # Generic interactive-link failures.
+  target-offline: "<red>That player is no longer online.</red>"
+  invalid-link: "<red>That interactive link is invalid.</red>"
+  limit-reached: "<red>Please do not use an excessive amount of interactive placeholders.</red>"
+  # Hover shown when a player name is made interactive. Supported values: {world}, {ping}, {health}.
+  player-hover: "<gray>World: <white>{world}</white>\n<gray>Ping: <white>{ping}ms</white>\n<gray>Health: <white>{health}</white>"
 help:
   title: "<gold><bold>ThunderChat Help</bold></gold> <dark_gray>({page}/{max_page})</dark_gray>"
   max-page: 3
