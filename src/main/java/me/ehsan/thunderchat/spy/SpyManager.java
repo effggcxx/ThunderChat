@@ -9,12 +9,13 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Local-only command, private-message, anvil, sign and book spy state. */
 public final class SpyManager {
     private final ThunderChat plugin;
-    private final Map<UUID, EnumSet<Section>> enabled = new HashMap<>();
-    private final Set<UUID> initialized = new HashSet<>();
+    private final Map<UUID, EnumSet<Section>> enabled = new ConcurrentHashMap<>();
+    private final Set<UUID> initialized = ConcurrentHashMap.newKeySet();
     private final File file;
     private YamlConfiguration data;
 
@@ -58,7 +59,9 @@ public final class SpyManager {
     public void toggle(Player player, Section section) {
         if (!canSpySection(player, section)) return;
         EnumSet<Section> set = enabled.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Section.class));
-        if (!set.remove(section)) set.add(section);
+        synchronized (set) {
+            if (!set.remove(section)) set.add(section);
+        }
         initialized.add(player.getUniqueId());
         save();
     }
@@ -95,17 +98,9 @@ public final class SpyManager {
         sendLocal(Section.COMMANDS, output, source.getUniqueId());
     }
 
-    public void spyAnvil(Player source, String text) {
-        spyInput(source, Section.ANVILS, "ANVIL", text);
-    }
-
-    public void spySign(Player source, String text) {
-        spyInput(source, Section.SIGNS, "SIGN", text);
-    }
-
-    public void spyBook(Player source, String text) {
-        spyInput(source, Section.BOOKS, "BOOK", text);
-    }
+    public void spyAnvil(Player source, String text) { spyInput(source, Section.ANVILS, "ANVIL", text); }
+    public void spySign(Player source, String text) { spyInput(source, Section.SIGNS, "SIGN", text); }
+    public void spyBook(Player source, String text) { spyInput(source, Section.BOOKS, "BOOK", text); }
 
     private void spyInput(Player source, Section section, String type, String message) {
         if (!plugin.getPluginConfig().getBoolean("spy.enabled", true)
@@ -155,11 +150,12 @@ public final class SpyManager {
         } catch (IllegalArgumentException ignored) { }
     }
 
-    public void save() {
+    public synchronized void save() {
         data = new YamlConfiguration();
         for (UUID uuid : initialized) {
             List<String> sections = new ArrayList<>();
-            for (Section section : enabled.getOrDefault(uuid, EnumSet.noneOf(Section.class))) sections.add(section.name());
+            EnumSet<Section> set = enabled.getOrDefault(uuid, EnumSet.noneOf(Section.class));
+            synchronized (set) { for (Section section : set) sections.add(section.name()); }
             data.set(uuid.toString(), sections);
         }
         try {
