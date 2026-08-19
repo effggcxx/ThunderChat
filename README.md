@@ -2,7 +2,8 @@
 
 A Paper chat plugin with local gamemode chat, permission-gated network
 channels (BungeeCord/Velocity legacy forwarding), moderation filters,
-private messaging with ignore/spy, per-channel mutes, mentions, and a
+private messaging with ignore/spy, per-channel mutes, mentions,
+InteractiveChat-style clickable/hoverable chat placeholders, and a
 MiniMessage-based Chat Color menu. Requires Paper 1.21.11+ and Java 21.
 LuckPerms and PlaceholderAPI are optional soft-dependencies — both are
 only used for prefix/placeholder resolution in chat formats.
@@ -145,6 +146,13 @@ The per-color/gradient/style permissions aren't in `plugin.yml` — they're
 registered at startup from the same lists that drive the GUI, so adding
 a new gradient in code automatically gets a matching permission node.
 
+### Interactive chat
+
+| Permission | Default | Covers |
+|---|---|---|
+| `thunderchat.interactive.item` | true | Using the `[item]`/`[i]` placeholder |
+| `thunderchat.interactive.inventory` | true | Using the `[inv]` placeholder, and opening an inventory it links to |
+
 ## Moderation filters
 
 All of these run through `FilterManager` in one pipeline, checked in
@@ -210,6 +218,32 @@ Typing `@PlayerName` in a channel message (if you hold
 `mentions.highlight-color` for everyone who sees the message, and plays
 `mentions.sound` for the mentioned player specifically. Toggle the whole
 feature off with `mentions.enabled: false`.
+
+## Interactive chat
+
+Lightweight, InteractiveChat-style placeholders that any player holding
+the right permission can type directly into chat — no external plugin
+required. `InteractiveChatManager` expands them after the message is
+otherwise formatted, so they work in both local and network channels.
+
+| Placeholder | Permission | Shows | On click |
+|---|---|---|---|
+| `[item]` / `[i]` | `thunderchat.interactive.item` | The item in the sender's main hand (name + hover with amount); `[No item]` if empty-handed | — |
+| `[inv]` | `thunderchat.interactive.inventory` | An `[Inventory]` tag, hover-labeled with the sender's name | Opens a read-only 54-slot snapshot of the sender's inventory (hotbar/main/armor/off-hand) for the clicker |
+
+Both permissions default to `true`. All of the visible text, hover
+text, and error messages above are configurable under `interactive:`
+in `messages.yml`.
+
+Clicking `[inv]` runs `/thunderchat inventory <uuid>` behind the
+scenes — this isn't meant to be typed manually, it exists only as the
+click-event target, and it no-ops if the target player has since gone
+offline or the link is malformed.
+
+This feature is intentionally minimal today — a placeholder for the
+sender's own item/inventory, not arbitrary item-in-hand-of-anyone
+lookups, particle/durability detail, or slot-by-slot armor previews.
+More placeholders are planned; see [Credits](#credits).
 
 ## Chat Color
 
@@ -281,3 +315,19 @@ Requires Java 21.
 ```
 
 The built jar is output to `build/libs/`.
+
+## Credits
+
+The [Interactive chat](#interactive-chat) placeholders are a small,
+original-code reimplementation inspired by
+[InteractiveChat](https://github.com/Loohp/InteractiveChat) by
+[Loohp](https://github.com/Loohp) — the plugin that popularized
+clickable/hoverable item, inventory, and location placeholders in chat.
+Current placeholder coverage in ThunderChat (`[item]`/`[i]`, `[inv]`) is
+intentionally a small subset of what InteractiveChat offers.
+
+ThunderChat's own interactive-chat code will start drawing more directly
+on InteractiveChat's source as the placeholder set grows, so expect this
+section to expand alongside it. All credit for the original concept and
+implementation approach goes to Loohp and the InteractiveChat
+contributors; go check out the real thing at the link above.
