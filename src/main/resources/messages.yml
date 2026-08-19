@@ -1,10 +1,9 @@
 # ThunderChat messages
-# All player-facing messages should be configured here.
-# MiniMessage is supported: <red>, <green>, <yellow>, <gray>, <bold>, <gradient:gold:red>...</gradient>, etc.
-# Placeholders use {placeholder} syntax. Unknown placeholders are left unchanged.
+# Every entry in this file is player-facing and can be customized.
+# MiniMessage is supported throughout this file.
+# Placeholders use {name} syntax. Unknown placeholders remain unchanged.
 #
-# Help pages are intentionally separate so server owners can completely rewrite the help text.
-# Add more pages by copying help.pages.<number> and increase help.max-page.
+# Behavior belongs in config.yml. Player-facing text and display formats belong here.
 
 prefix: "<gold><bold>ThunderChat</bold></gold> <dark_gray>»</dark_gray>"
 
@@ -44,6 +43,17 @@ admin:
   filters-enabled: "enabled"
   filters-disabled: "disabled"
 
+spy:
+  no-permission: "<red>You don't have permission to spy.</red>"
+  usage: "<red>Usage: /spy <on|off|status|toggle> [commands|private-messages|anvils|signs|books]</red>"
+  toggle-usage: "<red>Usage: /spy toggle <commands|private-messages|anvils|signs|books></red>"
+  enabled-all: "<green>Spy enabled for all available sections.</green>"
+  disabled: "<yellow>Spy disabled.</yellow>"
+  status: "<gray>Spy status: <white>{status}"
+  unknown-section: "<red>Unknown spy section.</red>"
+  section-no-permission: "<red>You don't have permission to spy on that input type.</red>"
+  toggled: "<green>Spy {section} is now {state}.</green>"
+
 help:
   title: "<gold><bold>ThunderChat Help</bold></gold> <dark_gray>({page}/{max_page})</dark_gray>"
   max-page: 3
@@ -71,5 +81,42 @@ help:
     - "<yellow>/highranklist <gray>- List visible high-rank members."
     - "<gray>Use <white>/thunderchat help <page></white> to browse pages."
 
-# Existing configurable message formats can be moved here over time without changing their keys.
-# Keep this file for player-facing text only; config.yml remains for behavior and feature settings.
+# Display formats moved from config.yml can be placed below these sections.
+# The migration keeps behavior settings in config.yml and makes all player-facing text editable here.
+formats:
+  alert: "<red><bold>[ALERT]</bold></red> <red>{type}</red> <dark_gray>|</dark_gray> <gray>{server}</gray> <dark_gray>|</dark_gray> <white>{player}</white> <dark_gray>|</dark_gray> <gray>{message}</gray>"
+  mention-highlight: "<yellow>"
+  spy:
+    private-message: "<dark_gray>[<gray>SPY</gray>] <gray>{player}</gray> <dark_gray>---> <gray>{target}</gray> <dark_gray>: <gray>{message}</gray>"
+    command: "<dark_gray>[<gray>SPY</gray>] <gray>{player}</gray> <dark_gray>: <gray>{message}</gray>"
+    anvil: "<dark_gray>[<gray>SPY</gray>] <gray>{player}</gray> <dark_gray>renamed an item to: <white>{message}</white>"
+    sign: "<dark_gray>[<gray>SPY</gray>] <gray>{player}</gray> <dark_gray>wrote on a sign: <white>{message}</white>"
+    book: "<dark_gray>[<gray>SPY</gray>] <gray>{player}</gray> <dark_gray>wrote in a book: <white>{message}</white>"
+  lists:
+    staff:
+      header: "<dark_gray>------<dark_purple>------<light_purple>------<dark_purple>------<dark_gray>------</dark_gray>"
+      format: "{prefix}{player} <gray>({server})</gray>"
+      footer: "<dark_gray>------<dark_purple>------<light_purple>------<dark_purple>------<dark_gray>------</dark_gray>"
+      nobody: "<gray>There is no staff <light_purple>online</light_purple>.</gray>"
+    highrank:
+      header: "<dark_gray>------<gold>------<yellow>------<gold>------<dark_gray>------</dark_gray>"
+      format: "{prefix}{player} <gray>({server})</gray>"
+      footer: "<dark_gray>------<gold>------<yellow>------<gold>------<dark_gray>------</dark_gray>"
+      nobody: "<gray>There is no high-rank <yellow>online</yellow>.</gray>"
+    admin:
+      header: "<dark_gray>------<dark_red>------<red>------<dark_red>------<dark_gray>------</dark_gray>"
+      format: "{prefix}{player} <gray>({server})</gray>"
+      footer: "<dark_gray>------<dark_red>------<red>------<dark_red>------<dark_gray>------</dark_gray>"
+      nobody: "<gray>There is no admin <red>online</red>.</gray>"
+    donator:
+      header: "<dark_gray>------<dark_green>------<green>------<dark_green>------<dark_gray>------</dark_gray>"
+      format: "{prefix}{player} <gray>({server})</gray>"
+      footer: "<dark_gray>------<dark_green>------<green>------<dark_green>------<dark_gray>------</dark_gray>"
+      nobody: "<gray>There is no donator <green>online</green>.</gray>"
+  channels:
+    local: "{prefix}<reset>{player}<gray>: <white>{message}"
+    global: "<bold><dark_blue>GLOBAL</dark_blue> <aqua>Chat</aqua> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
+    staff: "<bold><dark_purple>Staff</dark_purple> <light_purple>Chat</light_purple> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
+    donator: "<bold><dark_green>Donator</dark_green> <green>Chat</green> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
+    admin: "<bold><dark_red>Admin</dark_red> <red>Chat</red> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
+    highrank: "<bold><gold>HighRank</gold> <yellow>Chat</yellow> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
