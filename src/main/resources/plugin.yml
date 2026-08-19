@@ -62,7 +62,7 @@ commands:
     aliases: [ccolor]
   thunderchat:
     description: Reload config / admin subcommands
-    usage: /thunderchat <reload>
+    usage: /thunderchat <reload|info|help|inventory>
     aliases: [tc]
   stafflist:
     description: List online players with staff chat permission
@@ -135,6 +135,12 @@ permissions:
   thunderchat.bypass.spy:
     description: Prevents this player's commands and private messages from being spied on
     default: false
+  thunderchat.interactive.item:
+    description: Allows using the [item] and [i] interactive chat placeholders
+    default: true
+  thunderchat.interactive.inventory:
+    description: Allows using the [inv] interactive chat placeholder and viewing linked inventories
+    default: true
   thunderchat.clearchat.*:
     description: Allows clearing every ThunderChat channel
     default: op
