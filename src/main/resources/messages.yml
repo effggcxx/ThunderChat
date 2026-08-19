@@ -56,6 +56,19 @@ spy:
   unknown-section: "<red>Unknown spy section.</red>"
   section-no-permission: "<red>You don't have permission to spy on that input type.</red>"
   toggled: "<green>Spy {section} is now {state}.</green>"
+interactive:
+  # Text displayed when [item] or [i] is used while holding nothing.
+  item-empty: "<gray>[No item]</gray>"
+  # Visible text for the held-item placeholder. The actual item details appear on hover.
+  item-text: "<aqua>[Item]</aqua>"
+  # Hover text for [item]/[i]. {item} is the display/material name and {amount} is the stack size.
+  item-hover: "<yellow>{item}</yellow> <gray>x{amount}</gray>"
+  # Visible text for the inventory placeholder.
+  inventory-text: "<aqua>[Inventory]</aqua>"
+  # Hover text for [inv]. {player} is the player whose inventory will be shown.
+  inventory-hover: "<yellow>Click to view <white>{player}</white>'s inventory.</yellow>"
+  inventory-offline: "<red>That player is no longer online.</red>"
+  invalid-inventory: "<red>That inventory link is invalid.</red>"
 help:
   title: "<gold><bold>ThunderChat Help</bold></gold> <dark_gray>({page}/{max_page})</dark_gray>"
   max-page: 3
