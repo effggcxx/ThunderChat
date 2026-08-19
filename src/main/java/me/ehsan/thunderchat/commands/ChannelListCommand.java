@@ -28,7 +28,7 @@ public final class ChannelListCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        Channel channel = resolveChannel(command.getName(), label, args);
+        Channel channel = resolveChannel(command.getName(), label);
         if (channel == null) {
             sender.sendMessage(ChatColor.RED + "Unknown list type. Use staff, highrank, admin, or donator.");
             return true;
@@ -45,7 +45,7 @@ public final class ChannelListCommand implements CommandExecutor {
             }
         }
 
-        List<Player> online = collectOnlineWithPermission(channel);
+        List<Player> online = collectOnlineWithPermission(channel, sender);
         String configKey = "lists." + channel.id();
         String header = plugin.getPluginConfig().getString(configKey + ".header", "&8&m------&5&m------&d&m------&5&m------&8&m------&f");
         String format = plugin.getPluginConfig().getString(configKey + ".format", "%luckperms_prefix%%player% &7(&d%server_name%&7) ");
@@ -62,7 +62,7 @@ public final class ChannelListCommand implements CommandExecutor {
         return true;
     }
 
-    private Channel resolveChannel(String commandName, String label, String[] args) {
+    private Channel resolveChannel(String commandName, String label) {
         if (fixedChannel != null) return fixedChannel;
         String key = (label != null ? label : commandName).toLowerCase(Locale.ROOT);
         if (key.endsWith("list")) key = key.substring(0, key.length() - 4);
@@ -73,25 +73,17 @@ public final class ChannelListCommand implements CommandExecutor {
         return Channel.fromId(key);
     }
 
-    private List<Player> collectOnlineWithPermission(Channel channel) {
+    private List<Player> collectOnlineWithPermission(Channel channel, CommandSender viewer) {
         GlobalChatManager manager = plugin.getGlobalChatManager();
         List<Player> result = new ArrayList<>();
         String hidePermission = "thunderchat.list.hide." + channel.id();
-        String bypassPermission = "thunderchat.bypass.list.hide";
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!manager.canUse(player, channel)) continue;
-            // Players with the hide permission are omitted unless the viewer has the bypass permission.
-            // The list command only needs the viewer's permissions, so filtering is performed later by
-            // collecting the hidden status from the target's own permission set.
-            if (player.hasPermission(hidePermission)) {
-                // Store hidden players temporarily through a lightweight wrapper below; the viewer is
-                // evaluated by the caller in format/collection. For console, hide by default as well.
-                result.add(new HiddenPlayerMarker(player, hidePermission));
-            } else {
-                result.add(player);
-            }
+        boolean bypass = viewer.hasPermission("thunderchat.bypass.list.hide");
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            if (!manager.canUse(target, channel)) continue;
+            if (!bypass && target.hasPermission(hidePermission)) continue;
+            result.add(target);
         }
-        // Rebuild using the sender-aware overload is handled by the marker check in onCommand.
+        result.sort(Comparator.comparing(p -> p.getName().toLowerCase(Locale.ROOT)));
         return result;
     }
 
@@ -113,15 +105,5 @@ public final class ChannelListCommand implements CommandExecutor {
 
     private String colorize(String input) {
         return input == null ? "" : ChatColor.translateAlternateColorCodes('&', input);
-    }
-
-    /** Marker subclass is unnecessary for Bukkit Player and therefore this method is replaced below. */
-    private static final class HiddenPlayerMarker extends PlayerWrapper {
-        private HiddenPlayerMarker(Player player, String permission) { super(player); }
-    }
-
-    private static class PlayerWrapper extends Player {
-        private final Player delegate;
-        protected PlayerWrapper(Player delegate) { this.delegate = delegate; }
     }
 }
