@@ -24,6 +24,22 @@ ThunderChat's staff-list presentation was inspired by the visual/configuration s
 
 The staff-list formatting in `messages.yml` is ThunderChat's own implementation and remains part of ThunderChat's GPLv3 codebase.
 
+## HikariCP
+
+ThunderChat bundles HikariCP for MySQL connection pooling.
+
+- Project: https://github.com/brettwooldridge/HikariCP
+- License: Apache License 2.0
+
+## MySQL Connector/J
+
+ThunderChat bundles MySQL Connector/J for JDBC connectivity.
+
+- Project: https://github.com/mysql/mysql-connector-j
+- License: GPLv2 with Universal FOSS Exception, as published by Oracle/MySQL
+
+The dependency is used without modification. Refer to the dependency's own license and legal notices for its terms.
+
 ## License compatibility
 
 ThunderChat is distributed under **GNU GPLv3**. See `LICENSE` for the license terms and the notices above for third-party attribution.
