@@ -7,12 +7,17 @@ repositories {
     maven { url = 'https://repo.papermc.io/repository/maven-public/' }
     maven { url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
     maven { url = 'https://repo.luckperms.net/' }
+    mavenCentral()
 }
 
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
     compileOnly 'net.luckperms:api:5.4'
     compileOnly 'me.clip:placeholderapi:2.11.6'
+    implementation 'com.zaxxer:HikariCP:7.0.2'
+    implementation('com.mysql:mysql-connector-j:9.7.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
 }
 
 java { toolchain.languageVersion = JavaLanguageVersion.of(21) }
@@ -21,4 +26,8 @@ processResources {
     filesMatching('plugin.yml') { expand(version: project.version) }
 }
 
-jar { archiveBaseName = 'ThunderChat' }
+jar {
+    archiveBaseName = 'ThunderChat'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+}
