@@ -4,55 +4,47 @@ import me.ehsan.thunderchat.ThunderChat;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** Tracks reply targets and handles private messages. */
+/** Handles local and network-wide private messages and reply targets. */
 public class PrivateMessageManager {
     private final ThunderChat plugin;
-    private final Map<UUID, UUID> replyTarget = new HashMap<>();
+    private final Map<UUID, ReplyTarget> replyTarget = new ConcurrentHashMap<>();
+    private record ReplyTarget(UUID uuid, String name) {}
+    public PrivateMessageManager(ThunderChat plugin){this.plugin=plugin;}
+    public boolean isEnabled(){return plugin.getPluginConfig().getBoolean("private-messages.enabled",true);}
 
-    public PrivateMessageManager(ThunderChat plugin) { this.plugin = plugin; }
-
-    public boolean isEnabled() {
-        return plugin.getPluginConfig().getBoolean("private-messages.enabled", true);
+    public boolean send(Player sender,Player target,String message){
+        if(plugin.getIgnoreManager().isIgnoring(target,sender)){sender.sendMessage(ChatColor.RED+target.getName()+" is ignoring you.");return false;}
+        deliverLocal(sender,target,message); return true;
     }
 
-    public boolean send(Player sender, Player target, String message) {
-        if (plugin.getIgnoreManager().isIgnoring(target, sender)) {
-            sender.sendMessage(ChatColor.RED + target.getName() + " is ignoring you.");
-            return false;
-        }
-
-        String toTarget = ChatColor.GRAY + "[" + ChatColor.LIGHT_PURPLE + sender.getName()
-                + ChatColor.GRAY + " -> " + ChatColor.LIGHT_PURPLE + "me" + ChatColor.GRAY + "] "
-                + ChatColor.WHITE + message;
-        String toSender = ChatColor.GRAY + "[" + ChatColor.LIGHT_PURPLE + "me"
-                + ChatColor.GRAY + " -> " + ChatColor.LIGHT_PURPLE + target.getName() + ChatColor.GRAY + "] "
-                + ChatColor.WHITE + message;
-
-        target.sendMessage(toTarget);
-        sender.sendMessage(toSender);
-        replyTarget.put(sender.getUniqueId(), target.getUniqueId());
-        replyTarget.put(target.getUniqueId(), sender.getUniqueId());
-
-        if (plugin.getPluginConfig().getBoolean("private-messages.log-to-console", false)) {
-            plugin.getLogger().info("[PM] " + sender.getName() + " -> " + target.getName() + ": " + message);
-        }
-        return true;
+    public boolean sendNetwork(Player sender,String targetName,String message){
+        if(!isEnabled())return false;
+        Player local=plugin.getServer().getPlayerExact(targetName);
+        if(local!=null)return send(sender,local,message);
+        try{plugin.getNetworkMessenger().sendPrivateMessage(sender,sender.getUniqueId(),sender.getName(),targetName,null,message);replyTarget.put(sender.getUniqueId(),new ReplyTarget(null,targetName));echoSender(sender,targetName,message);return true;}catch(IOException e){sender.sendMessage(ChatColor.RED+"Could not send that message across the network.");return false;}
     }
 
-    public Player getReplyTarget(UUID player) {
-        UUID targetId = replyTarget.get(player);
-        if (targetId == null) return null;
-        return plugin.getServer().getPlayer(targetId);
+    private void deliverLocal(Player sender,Player target,String message){
+        String toTarget=ChatColor.GRAY+"["+ChatColor.LIGHT_PURPLE+sender.getName()+ChatColor.GRAY+" -> "+ChatColor.LIGHT_PURPLE+"me"+ChatColor.GRAY+"] "+ChatColor.WHITE+message;
+        String toSender=ChatColor.GRAY+"["+ChatColor.LIGHT_PURPLE+"me"+ChatColor.GRAY+" -> "+ChatColor.LIGHT_PURPLE+target.getName()+ChatColor.GRAY+"] "+ChatColor.WHITE+message;
+        target.sendMessage(toTarget);sender.sendMessage(toSender);replyTarget.put(sender.getUniqueId(),new ReplyTarget(target.getUniqueId(),target.getName()));replyTarget.put(target.getUniqueId(),new ReplyTarget(sender.getUniqueId(),sender.getName()));
+        if(plugin.getPluginConfig().getBoolean("private-messages.log-to-console",false))plugin.getLogger().info("[PM] "+sender.getName()+" -> "+target.getName()+": "+message);
     }
+    private void echoSender(Player sender,String target,String message){sender.sendMessage(ChatColor.GRAY+"["+ChatColor.LIGHT_PURPLE+"me"+ChatColor.GRAY+" -> "+ChatColor.LIGHT_PURPLE+target+ChatColor.GRAY+"] "+ChatColor.WHITE+message);}
 
-    public void clearReplyTarget(UUID player) { replyTarget.remove(player); }
+    public Player getReplyTarget(UUID player){ReplyTarget target=replyTarget.get(player);if(target==null||target.uuid()==null)return null;return plugin.getServer().getPlayer(target.uuid());}
+    public String getReplyTargetName(UUID player){ReplyTarget target=replyTarget.get(player);return target==null?null:target.name();}
+    public boolean sendReply(Player sender,String message){ReplyTarget target=replyTarget.get(sender.getUniqueId());if(target==null)return false;Player local=target.uuid()==null?null:plugin.getServer().getPlayer(target.uuid());if(local!=null)return send(sender,local,message);try{plugin.getNetworkMessenger().sendPrivateMessage(sender,sender.getUniqueId(),sender.getName(),target.name(),target.uuid(),message);echoSender(sender,target.name(),message);return true;}catch(IOException e){sender.sendMessage(ChatColor.RED+"Could not send that reply across the network.");return false;}}
 
-    public void clearPlayer(UUID player) {
-        replyTarget.remove(player);
-        replyTarget.entrySet().removeIf(entry -> entry.getValue().equals(player));
-    }
+    public void onNetworkPacket(byte[] data){try{DataInputStream in=new DataInputStream(new ByteArrayInputStream(data));if(in.readInt()!=1||!"PM".equals(in.readUTF()))return;UUID senderId=UUID.fromString(in.readUTF());String senderName=in.readUTF();boolean hasTargetId=in.readBoolean();UUID targetId=hasTargetId?UUID.fromString(in.readUTF()):null;String targetName=in.readUTF();String message=in.readUTF();if(plugin.getServer().getPlayer(senderId)!=null)return;Player target=targetId!=null?plugin.getServer().getPlayer(targetId):plugin.getServer().getPlayerExact(targetName);if(target==null)return;if(plugin.getIgnoreManager().isIgnoring(target.getUniqueId(),senderId))return;target.sendMessage(ChatColor.GRAY+"["+ChatColor.LIGHT_PURPLE+senderName+ChatColor.GRAY+" -> "+ChatColor.LIGHT_PURPLE+"me"+ChatColor.GRAY+"] "+ChatColor.WHITE+message);replyTarget.put(target.getUniqueId(),new ReplyTarget(senderId,senderName));}catch(Exception e){plugin.getLogger().warning("Malformed ThunderChat private-message packet: "+e.getMessage());}}
+
+    public void clearReplyTarget(UUID player){replyTarget.remove(player);}
+    public void clearPlayer(UUID player){replyTarget.remove(player);replyTarget.entrySet().removeIf(entry->player.equals(entry.getValue().uuid()));}
 }
