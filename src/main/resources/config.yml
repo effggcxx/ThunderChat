@@ -156,9 +156,13 @@ spy:
   sign-format: "&8[&7SPY&r&8] &7{player}&r &8wrote on a sign: &f{message}"
   book-format: "&8[&7SPY&r&8] &7{player}&r &8wrote in a book: &f{message}"
 storage:
-  # ONE shared database for the entire proxy network.
-  # Do not create a separate database per backend/gamemode.
+  # ONE shared database for the entire proxy network when MySQL is available.
+  # If MySQL cannot be reached, ThunderChat automatically falls back to local YAML storage.
+  # The plugin keeps running; only features that require a shared database (such as the
+  # persistent empty-backend network queue) lose their MySQL-backed behavior until MySQL returns.
   type: mysql
+  # Set to yaml to use YAML intentionally. Set to false/none to disable persistent fallback.
+  fallback: yaml
   mysql:
     host: "127.0.0.1"
     port: 3306
