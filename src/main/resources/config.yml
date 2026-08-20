@@ -14,8 +14,11 @@ format:
     highrank: "<bold><gold>HighRank</gold> <yellow>Chat</yellow> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
 network:
   enabled: true
+  # This identifies this Paper backend, NOT a database.
+  # Every backend in the same Velocity/Bungee network must have a unique name.
   server-name: "skymine"
-  # Every backend using ThunderChat must be listed here for the MySQL fallback queue.
+  # These are backend names used for the persistent network queue. They are NOT databases.
+  # Every backend in the network should use the SAME MySQL database configured below.
   servers:
     - "skymine"
     - "bedwars"
@@ -153,6 +156,8 @@ spy:
   sign-format: "&8[&7SPY&r&8] &7{player}&r &8wrote on a sign: &f{message}"
   book-format: "&8[&7SPY&r&8] &7{player}&r &8wrote in a book: &f{message}"
 storage:
+  # ONE shared database for the entire proxy network.
+  # Do not create a separate database per backend/gamemode.
   type: mysql
   mysql:
     host: "127.0.0.1"
@@ -161,6 +166,9 @@ storage:
     username: "root"
     password: "change-me"
     pool-size: 4
+    # Every Paper backend should use these same MySQL connection settings.
+    # Only network.server-name changes between backends.
+    # ThunderChat creates the database/tables automatically when the account has permission.
     # Persistent state is cached in memory and written asynchronously in batches.
     # Legacy YAML files are imported when a MySQL record is absent.
 lists:
