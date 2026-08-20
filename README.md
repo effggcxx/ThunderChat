@@ -15,14 +15,52 @@ ThunderChat provides local gamemode chat, permission-gated network channels, mod
 
 ## Quick start
 
-1. Install ThunderChat in the Paper `plugins/` directory.
-2. Start the server once so the default configuration files are generated.
-3. Configure your database credentials in `config.yml`.
-4. Make sure the MySQL account has permission to create the configured database/tables. ThunderChat creates its schema and tables automatically.
-5. Restart the server after changing major storage/network settings.
-6. Grant players the channel/filter/feature permissions they need.
+1. Install ThunderChat on **every Paper backend** behind your Velocity/Bungee proxy.
+2. Start the servers once so the default configuration files are generated.
+3. Configure the **same MySQL connection/database** in `config.yml` on every backend.
+4. Give the MySQL account permission to create the configured database/tables. ThunderChat creates its schema and tables automatically.
+5. Give every backend a **unique `network.server-name`**. This is a backend identifier, not a database name.
+6. Restart after changing major storage/network settings.
+7. Grant players the channel/filter/feature permissions they need.
 
-For a proxy network, install ThunderChat on every backend and give each backend a unique `network.server-name` while using the same MySQL database.
+### One network = one shared ThunderChat database
+
+A Velocity network with `lobby`, `survival`, `skyblock`, etc. does **not** need a separate database for each server. Every ThunderChat backend should normally point at the same `thunderchat` database.
+
+Example:
+
+```text
+                    Velocity
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+       Lobby       Survival      Skyblock
+       :25565       :25566        :25567
+          │            │            │
+          └────────────┼────────────┘
+                       │
+                MySQL: thunderchat
+```
+
+Each backend changes only its `network.server-name`:
+
+```yaml
+network:
+  server-name: "survival"
+
+storage:
+  type: mysql
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    database: "thunderchat"
+    username: "root"
+    password: "change-me"
+```
+
+On another backend, `network.server-name` might be `skyblock`, while the database remains `thunderchat`.
+
+The shared database is intentional: it provides one source of truth for persistent player state and the cross-backend fallback queue. Backend-specific state is identified using the network server name where necessary.
 
 ## Channels
 
@@ -42,6 +80,92 @@ Players start in `local`. `/channel <name>` switches the active channel. `/sc`, 
 `/chathide` controls visibility only. Hiding a channel does **not** remove the player's permission to switch to it.
 
 Channel permissions and formats are configurable. See `config.yml` and `messages.yml`.
+
+## MySQL persistence
+
+ThunderChat uses MySQL with HikariCP connection pooling.
+
+The persistence path is:
+
+```text
+Gameplay state
+     ↓
+in-memory cache
+     ↓
+dirty-state batching
+     ↓
+async JDBC/HikariCP
+     ↓
+ONE shared MySQL database
+```
+
+Gameplay operations do not synchronously write YAML files. Dirty data is written asynchronously in batches and flushed during shutdown.
+
+Persisted state includes channel state, mutes, ignores, spy settings and Chat Color settings.
+
+### Database setup
+
+ThunderChat creates the configured database and tables automatically when the MySQL account has sufficient privileges. You do **not** need to manually create ThunderChat tables.
+
+For a proxy network, configure the same database connection on every backend. Do not create `thunderchat_survival`, `thunderchat_skyblock`, etc. unless you intentionally want completely isolated ThunderChat installations.
+
+```yaml
+storage:
+  type: mysql
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    database: "thunderchat"
+    username: "root"
+    password: "change-me"
+    pool-size: 4
+```
+
+Each backend has its own Hikari connection pool, but those pools connect to the same shared database. This is normal and desirable: the pool is local to the Paper process; the data store is shared by the network.
+
+### Network server identity vs database identity
+
+These two settings have different jobs:
+
+- `storage.mysql.database` = the shared persistent ThunderChat database.
+- `network.server-name` = the identity of this individual Paper backend.
+
+For example:
+
+| Backend | `network.server-name` | `storage.mysql.database` |
+|---|---|---|
+| Survival | `survival` | `thunderchat` |
+| Skyblock | `skyblock` | `thunderchat` |
+| BedWars | `bedwars` | `thunderchat` |
+
+Never use the backend name as the database name unless you deliberately want isolated data.
+
+## Network architecture
+
+ThunderChat uses a unified versioned `ThunderChat` network dispatcher rather than separate incoming listeners in individual managers.
+
+Network packets cover chat, clear, mute, alerts, ignore and private messages. Packet identifiers prevent duplicate delivery when a live packet and its queued fallback both exist.
+
+### Empty backends
+
+Bungee-style backend messaging traditionally needs an online player to carry a plugin message. ThunderChat uses the shared MySQL queue as a fallback for configured backend servers.
+
+```yaml
+network:
+  enabled: true
+  server-name: "survival"
+  servers:
+    - "survival"
+    - "skyblock"
+    - "bedwars"
+  queue-retention-minutes: 1440
+```
+
+`network.servers` contains **backend identifiers**, not databases. All listed backends can use the same MySQL database.
+
+If a backend is empty, applicable packets remain queued until a player joins. This prevents ordinary chat/PM/mute/clear operations from being silently lost because a backend temporarily has zero players.
+
+A future proxy-side implementation could remove the remaining dependency on backend carrier messaging entirely.
 
 ## Commands
 
@@ -165,13 +289,7 @@ Filter bypass permissions are independent, so `thunderchat.bypass.spam` does not
 
 Spy is deliberately **local-only**.
 
-Supported spy sections include:
-
-- commands
-- private messages
-- anvils
-- signs
-- books
+Supported spy sections include commands, private messages, anvils, signs and books.
 
 Spy output is styled separately from normal chat so staff can distinguish it easily. `thunderchat.bypass.spy` prevents a player's protected commands/PMs from being exposed.
 
@@ -183,136 +301,23 @@ Players can select colors, gradients and stackable styles. A selected color and 
 
 Custom formatting is one-shot: the next message is consumed as the requested MiniMessage format and is not delivered, filtered or spied. Invalid or obfuscated formats are rejected.
 
-The implementation uses Adventure/MiniMessage internally while preserving the configured visual appearance of the plugin.
-
 ## Interactive chat
 
-ThunderChat includes an InteractiveChat-style subsystem. Current placeholders/features include:
-
-| Placeholder | Purpose |
-|---|---|
-| `[item]`, `[i]` | Interactive held-item preview |
-| `[inv]` | Read-only inventory snapshot |
-| `[ender]`, `[e]` | Ender chest preview |
-| `[pos]` | Player position |
-| `[ping]` | Player ping |
-| Player names | Hover/click interaction |
-| Command placeholders | Click/suggest commands |
-| Configured custom placeholders | Regex + PlaceholderAPI-backed replacements |
+ThunderChat includes an InteractiveChat-style subsystem. Current placeholders/features include `[item]`, `[i]`, `[inv]`, `[ender]`, `[e]`, `[pos]`, `[ping]`, player names, command placeholders and configured custom placeholders.
 
 Inventory previews are strictly read-only: click and drag interactions cannot take items from the snapshot.
 
 Interactive expansion is bounded by the configured placeholder limit to keep unusually large messages from becoming expensive.
 
-## MySQL persistence
-
-ThunderChat uses MySQL with HikariCP connection pooling.
-
-The persistence path is:
-
-```text
-Gameplay state
-     ↓
-in-memory cache
-     ↓
-dirty-state batching
-     ↓
-async JDBC/HikariCP
-     ↓
-MySQL
-```
-
-Gameplay operations do not synchronously write YAML files. Dirty data is written asynchronously in batches and flushed during shutdown.
-
-Persisted state includes channel state, mutes, ignores, spy settings and Chat Color settings.
-
-### Database setup
-
-ThunderChat creates its configured database/schema and tables automatically when the MySQL account has sufficient privileges. You do **not** need to manually create ThunderChat tables.
-
-Example:
-
-```yaml
-storage:
-  type: mysql
-  mysql:
-    host: "127.0.0.1"
-    port: 3306
-    database: "thunderchat"
-    username: "root"
-    password: "change-me"
-    pool-size: 4
-```
-
-For existing development installations, missing MySQL records can be populated from the corresponding legacy YAML data during migration.
-
-### Important
-
-All backend servers should use the same database when they are part of the same network. Use separate `network.server-name` values for each backend.
-
-## Network architecture
-
-ThunderChat uses a unified versioned `ThunderChat` network dispatcher rather than separate incoming listeners in individual managers.
-
-Network packets cover chat, clear, mute, alerts, ignore and private messages. Packet identifiers prevent duplicate delivery when a live packet and its queued fallback both exist.
-
-### Empty backends
-
-Bungee-style backend messaging traditionally needs an online player to carry a plugin message. ThunderChat uses a persistent MySQL queue as a fallback for configured backend servers.
-
-Example:
-
-```yaml
-network:
-  enabled: true
-  server-name: "skymine"
-  servers:
-    - "skymine"
-    - "bedwars"
-  queue-retention-minutes: 1440
-```
-
-If a backend is empty, applicable packets remain queued until a player joins. This prevents ordinary chat/PM/mute/clear operations from being silently lost because a backend temporarily has zero players.
-
-A future proxy-side implementation could remove the remaining dependency on backend carrier messaging entirely.
-
-## Cross-server private messaging
-
-`/msg` and `/reply` can target players on another backend. PMs use the network dispatcher and can be queued when the target backend is temporarily empty.
-
-Ignore state is synchronized across the network when MySQL/network storage is enabled.
-
-Spy remains local-only by design. A remote PM received on a backend can therefore be visible to spies **on that backend**, subject to the local spy permissions and bypass rules.
-
 ## Configuration files
 
 ### `config.yml`
 
-Controls behavior and infrastructure:
-
-- channels and permissions
-- network settings
-- MySQL/storage
-- filter thresholds and word lists
-- filter alerts
-- mentions
-- interactive-chat limits
-- spy behavior
-- feature toggles
+Controls behavior and infrastructure: channels, network settings, MySQL/storage, filters, alerts, mentions, interactive limits and spy behavior.
 
 ### `messages.yml`
 
-Controls player-facing text and presentation wherever supported:
-
-- channel formats
-- alert formats
-- spy formats
-- command responses
-- Chat Color messages
-- interactive-chat text
-- help pages
-
-This separation is intentional: change behavior in `config.yml`; change wording/presentation in `messages.yml`.
+Controls player-facing text and presentation wherever supported: channel formats, alert/spy formats, command responses, Chat Color messages, interactive-chat text and help pages.
 
 ## Performance considerations
 
@@ -326,6 +331,8 @@ ThunderChat keeps the gameplay hot path primarily in memory:
 - bounded interactive placeholder expansion
 - cheap moderation checks before similarity calculations
 
+Each Paper backend maintains its own small Hikari pool, but all pools share the same MySQL database. This is much lighter than creating a database per gamemode and lets the network share persistent state safely.
+
 PlaceholderAPI and MiniMessage evaluation can still become expensive when formats contain many complex placeholders or when a large network generates very high chat volume. Keep formats reasonably simple and use the interactive placeholder limit to prevent pathological messages.
 
 ## Troubleshooting
@@ -338,7 +345,7 @@ Check:
 2. Host and port are reachable from the Paper server.
 3. Username/password are correct.
 4. The account has permission to create the configured database/tables.
-5. Every backend uses the intended shared database.
+5. Every backend in the same network uses the **same database name and connection settings**.
 
 ### Cross-server chat is not arriving
 
@@ -378,7 +385,7 @@ The plugin JAR is generated in `build/libs/`.
 
 ## Credits and third-party notices
 
-ThunderChat uses/adapts ideas and source from open-source projects where their licenses permit it. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for detailed attribution and license information.
+ThunderChat uses/adapts ideas and source from open-source projects where their licenses permit it. See `THIRD_PARTY_NOTICES.md` for detailed attribution and license information.
 
 In particular:
 
@@ -391,12 +398,6 @@ ThunderChat is GPLv3. Consult the repository license and third-party notices bef
 
 ThunderChat is designed as a modular Paper plugin with separate managers for chat, filtering, network messaging, persistence, spy, interactive chat and Chat Color.
 
-When adding a feature, prefer:
-
-1. configuration in `config.yml`;
-2. player-facing text in `messages.yml`;
-3. Adventure Components/MiniMessage for formatting;
-4. asynchronous I/O for persistent storage;
-5. the unified network dispatcher for cross-backend state/messages.
+When adding a feature, prefer configuration in `config.yml`, player-facing text in `messages.yml`, Adventure Components/MiniMessage for formatting, asynchronous I/O for persistent storage, and the unified network dispatcher for cross-backend state/messages.
 
 Keep the main gameplay path lightweight and avoid blocking database or file operations from chat/event threads.
