@@ -246,7 +246,7 @@ public final class GlobalChatManager {
         Component message = plugin.getChatColorManager().colorizeComponent(player, text);
         message = applyMentionHighlight(message, player.hasPermission("thunderchat.mention"));
         Component output = format(getFormat(channel), channel, server, prefix(player), player.getName(), message, player);
-        output = plugin.getInteractiveChatManager().decorate(player, output);
+        output = plugin.getInteractiveChatManager().decorate(player, legacy.serialize(output));
         for (Player recipient : Bukkit.getOnlinePlayers()) {
             if (shouldReceive(recipient, player.getUniqueId(), channel)) {
                 recipient.sendMessage(output);
@@ -378,7 +378,7 @@ public final class GlobalChatManager {
                 Channel chatChannel = Channel.fromId(input.readUTF());
                 if (chatChannel == null || chatChannel == Channel.LOCAL) return;
                 UUID senderId = UUID.fromString(input.readUTF());
-                input.readUTF(); // Sender name is reserved for future remote-player metadata.
+                input.readUTF();
                 boolean mentionsAllowed = input.readBoolean();
                 String rawMessage = input.readUTF();
                 Component output = gson.deserialize(input.readUTF());
