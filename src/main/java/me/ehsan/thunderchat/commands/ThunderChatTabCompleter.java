@@ -14,13 +14,18 @@ import java.util.stream.Collectors;
 /** Shared lightweight tab completion for ThunderChat commands. */
 public final class ThunderChatTabCompleter implements TabCompleter {
     private static final List<String> CHANNELS = List.of("local", "global", "staff", "donator", "admin", "highrank");
+    private static final List<String> SPY_TYPES = List.of("commands", "private-messages", "anvils", "signs", "books");
+    private static final List<String> STAFF_LIST_COMMANDS = List.of("stafflist", "highranklist", "adminlist", "donatorlist");
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         String name = command.getName().toLowerCase(Locale.ROOT);
+
         if (name.equals("channel")) return filter(args, CHANNELS);
         if (name.equals("chathide")) {
-            List<String> values = new ArrayList<>(CHANNELS); values.add("all"); return filter(args, values);
+            List<String> values = new ArrayList<>(CHANNELS);
+            values.add("all");
+            return filter(args, values);
         }
         if (name.equals("chat")) {
             if (args.length <= 1) return filter(args, List.of("clear", "mute", "unmute"));
@@ -28,34 +33,57 @@ public final class ThunderChatTabCompleter implements TabCompleter {
             if (args.length >= 3) return playerNames(args[args.length - 1]);
         }
         if (name.equals("clearchat")) return filter(args, CHANNELS);
-        if (name.equals("channelmutelist")) return args.length == 1 ? List.of("1", "2", "3") : Collections.emptyList();
+        if (name.equals("channelmutelist")) return args.length == 1 ? filter(args, List.of("1", "2", "3")) : Collections.emptyList();
+
         if (name.equals("spy")) {
             if (args.length <= 1) return filter(args, List.of("on", "off", "status", "toggle"));
-            if (args.length == 2 && args[0].equalsIgnoreCase("toggle")) {
-                return filter(args, List.of("commands", "private-messages", "anvils", "signs", "books"));
-            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("toggle")) return filter(args, SPY_TYPES);
         }
-        if (name.equals("thunderchat")) return filter(args, List.of("reload", "info"));
-        // ========== ADDED ==========
-        if (name.equals("stafflist") || name.equals("highranklist") || name.equals("adminlist") || name.equals("donatorlist")
-                || name.equals("staff") || name.equals("highrank") || name.equals("admin") || name.equals("donator")
-                || name.equals("slist") || name.equals("hlist") || name.equals("alist") || name.equals("dlist")) {
+
+        if (name.equals("thunderchat")) {
+            return filter(args, List.of("reload", "info", "help", "inventory"));
+        }
+
+        if (name.equals("chatcolor")) {
+            return filter(args, List.of("clear"));
+        }
+
+        if (name.equals("ignore") || name.equals("unignore")) {
+            return playerNames(args.length == 0 ? "" : args[args.length - 1]);
+        }
+        if (name.equals("msg")) {
+            return args.length <= 1 ? playerNames(args.length == 0 ? "" : args[0]) : Collections.emptyList();
+        }
+        if (name.equals("reply")) return Collections.emptyList();
+
+        // Toggle commands do not currently accept arguments, but returning an empty
+        // list explicitly prevents Bukkit from falling back to unrelated completions.
+        if (name.equals("staffchat") || name.equals("donatorchat") || name.equals("adminchat")
+                || name.equals("highrankchat") || name.equals("gc")) {
+            return Collections.emptyList();
+        }
+
+        if (STAFF_LIST_COMMANDS.contains(name)) {
             return filter(args, List.of("list"));
         }
-        // ===========================
-        if (name.equals("ignore") || name.equals("unignore")) return playerNames(args.length == 0 ? "" : args[args.length - 1]);
-        if (name.equals("msg")) return args.length <= 1 ? playerNames(args.length == 0 ? "" : args[0]) : Collections.emptyList();
+
         return Collections.emptyList();
     }
 
     private List<String> playerNames(String prefix) {
         String value = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
-        return Bukkit.getOnlinePlayers().stream().map(p -> p.getName())
-                .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(value)).sorted().collect(Collectors.toList());
+        return Bukkit.getOnlinePlayers().stream()
+                .map(p -> p.getName())
+                .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(value))
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     private List<String> filter(String[] args, List<String> values) {
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
-        return values.stream().filter(v -> v.toLowerCase(Locale.ROOT).startsWith(prefix)).sorted().collect(Collectors.toList());
+        return values.stream()
+                .filter(v -> v.toLowerCase(Locale.ROOT).startsWith(prefix))
+                .sorted()
+                .collect(Collectors.toList());
     }
 }
