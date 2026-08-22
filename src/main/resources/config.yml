@@ -1,12 +1,12 @@
 # ThunderChat configuration
 # Channel formats support {channel}, {server}, {prefix}, {player}, {message}
-# plus any PlaceholderAPI placeholder.
+# plus any PlaceholderAPI placeholder. All player-facing formats use MiniMessage.
 format:
   prefix-placeholder: "%luckperms_prefix% "
-  normal: "{prefix}&r{player}&7: &f{message}"
-  global: "&7[{channel}]&r &7[{server}]&r {prefix}&r{player}&r&7: &f{message}"
+  normal: "{prefix}<reset>{player}<gray>: <white>{message}"
+  global: "<gray>[<reset>{channel}<gray>]</gray> <gray>[<reset>{server}<gray>]</gray> {prefix}<reset>{player}<gray>: <white>{message}"
   channels:
-    local: "{prefix}&r{player}&7: &f{message}"
+    local: "{prefix}<reset>{player}<gray>: <white>{message}"
     global: "<bold><dark_blue>GLOBAL</dark_blue> <aqua>Chat</aqua> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
     staff: "<bold><dark_purple>Staff</dark_purple> <light_purple>Chat</light_purple> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
     donator: "<bold><dark_green>Donator</dark_green> <green>Chat</green> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
@@ -14,15 +14,10 @@ format:
     highrank: "<bold><gold>HighRank</gold> <yellow>Chat</yellow> <dark_gray>•</dark_gray></bold> <white>{message}</white>"
 network:
   enabled: true
-  # This identifies this Paper backend, NOT a database.
-  # Every backend in the same Velocity/Bungee network must have a unique name.
   server-name: "skymine"
-  # These are backend names used for the persistent network queue. They are NOT databases.
-  # Every backend in the network should use the SAME MySQL database configured below.
   servers:
     - "skymine"
     - "bedwars"
-  # Packets remain available while a backend is empty. Set to 1440 for 24 hours.
   queue-retention-minutes: 1440
 channels:
   default: local
@@ -139,29 +134,24 @@ alerts:
     caps: true
     swear: true
     advertisement: true
-  format: "&c&l[ALERT]&r &c{type}&r &8| &7{server}&r &8| &f{player}&r &8| &7{message}"
+  format: "<shadow:#000000><bold><red>[ALERT]</red> <red>{type}</red> <dark_gray>|</dark_gray> <gray>{server}</gray> <dark_gray>|</dark_gray> <white>{player}</white> <dark_gray>|</dark_gray> <gray>{message}</gray></bold></shadow>"
 mentions:
   enabled: true
   sound: ENTITY_EXPERIENCE_ORB_PICKUP
-  highlight-color: "&e"
+  highlight-color: "<yellow>"
 ignore:
   public-chat:
     enabled: false
 spy:
   enabled: true
   autoenable: true
-  private-message-format: "&8[&7SPY&r&8] &7{player}&r &8---> &7{target}&r &8: &7{message}"
-  command-format: "&8[&7SPY&r&8] &7{player}&r &8: &7{message}"
-  anvil-format: "&8[&7SPY&r&8] &7{player}&r &8renamed an item to: &f{message}"
-  sign-format: "&8[&7SPY&r&8] &7{player}&r &8wrote on a sign: &f{message}"
-  book-format: "&8[&7SPY&r&8] &7{player}&r &8wrote in a book: &f{message}"
+  private-message-format: "<shadow:#000000><bold><dark_gray>[SPY]</dark_gray></bold> <gray>{player}</gray> <dark_gray>---></dark_gray> <gray>{target}</gray> <dark_gray>:</dark_gray> <gray>{message}</gray></shadow>"
+  command-format: "<shadow:#000000><bold><dark_gray>[SPY]</dark_gray></bold> <gray>{player}</gray> <dark_gray>:</dark_gray> <gray>{message}</gray></shadow>"
+  anvil-format: "<shadow:#000000><bold><dark_gray>[SPY]</dark_gray></bold> <gray>{player}</gray> <dark_gray>renamed an item to:</dark_gray> <gray>{message}</gray></shadow>"
+  sign-format: "<shadow:#000000><bold><dark_gray>[SPY]</dark_gray></bold> <gray>{player}</gray> <dark_gray>wrote on a sign:</dark_gray> <gray>{message}</gray></shadow>"
+  book-format: "<shadow:#000000><bold><dark_gray>[SPY]</dark_gray></bold> <gray>{player}</gray> <dark_gray>wrote in a book:</dark_gray> <gray>{message}</gray></shadow>"
 storage:
-  # ONE shared database for the entire proxy network when MySQL is available.
-  # If MySQL cannot be reached, ThunderChat automatically falls back to local YAML storage.
-  # The plugin keeps running; only features that require a shared database (such as the
-  # persistent empty-backend network queue) lose their MySQL-backed behavior until MySQL returns.
   type: mysql
-  # Set to yaml to use YAML intentionally. Set to false/none to disable persistent fallback.
   fallback: yaml
   mysql:
     host: "127.0.0.1"
@@ -170,32 +160,27 @@ storage:
     username: "root"
     password: "change-me"
     pool-size: 4
-    # Every Paper backend should use these same MySQL connection settings.
-    # Only network.server-name changes between backends.
-    # ThunderChat creates the database/tables automatically when the account has permission.
-    # Persistent state is cached in memory and written asynchronously in batches.
-    # Legacy YAML files are imported when a MySQL record is absent.
 lists:
   staff:
-    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
-    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    nobody: " &7There is no staff &donline&7."
+    header: "<dark_gray><strikethrough>------</strikethrough></dark_gray><dark_purple><strikethrough>------</strikethrough></dark_purple><light_purple><strikethrough>------</strikethrough></light_purple><dark_purple><strikethrough>------</strikethrough></dark_purple><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    format: "{prefix}{player} <gray>({server})</gray>"
+    footer: "<dark_gray><strikethrough>------</strikethrough></dark_gray><dark_purple><strikethrough>------</strikethrough></dark_purple><light_purple><strikethrough>------</strikethrough></light_purple><dark_purple><strikethrough>------</strikethrough></dark_purple><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    nobody: "<gray>There is no staff <light_purple>online</light_purple>.</gray>"
   highrank:
-    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
-    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    nobody: " &7There is no highrank &donline&7."
+    header: "<dark_gray><strikethrough>------</strikethrough></dark_gray><gold><strikethrough>------</strikethrough></gold><yellow><strikethrough>------</strikethrough></yellow><gold><strikethrough>------</strikethrough></gold><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    format: "{prefix}{player} <gray>({server})</gray>"
+    footer: "<dark_gray><strikethrough>------</strikethrough></dark_gray><gold><strikethrough>------</strikethrough></gold><yellow><strikethrough>------</strikethrough></yellow><gold><strikethrough>------</strikethrough></gold><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    nobody: "<gray>There is no highrank <yellow>online</yellow>.</gray>"
   admin:
-    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
-    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    nobody: " &7There is no admin &donline&7."
+    header: "<dark_gray><strikethrough>------</strikethrough></dark_gray><dark_red><strikethrough>------</strikethrough></dark_red><red><strikethrough>------</strikethrough></red><dark_red><strikethrough>------</strikethrough></dark_red><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    format: "{prefix}{player} <gray>({server})</gray>"
+    footer: "<dark_gray><strikethrough>------</strikethrough></dark_gray><dark_red><strikethrough>------</strikethrough></dark_red><red><strikethrough>------</strikethrough></red><dark_red><strikethrough>------</strikethrough></dark_red><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    nobody: "<gray>There is no admin <red>online</red>.</gray>"
   donator:
-    header: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    format: "%luckperms_prefix%%player% &7(&d%server_name%&7) "
-    footer: "&8&m------&5&m------&d&m------&5&m------&8&m------&f"
-    nobody: " &7There is no donator &donline&7."
+    header: "<dark_gray><strikethrough>------</strikethrough></dark_gray><dark_green><strikethrough>------</strikethrough></dark_green><green><strikethrough>------</strikethrough></green><dark_green><strikethrough>------</strikethrough></dark_green><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    format: "{prefix}{player} <gray>({server})</gray>"
+    footer: "<dark_gray><strikethrough>------</strikethrough></dark_gray><dark_green><strikethrough>------</strikethrough></dark_green><green><strikethrough>------</strikethrough></green><dark_green><strikethrough>------</strikethrough></dark_green><dark_gray><strikethrough>------</strikethrough></dark_gray>"
+    nobody: "<gray>There is no donator <green>online</green>.</gray>"
 interactive:
   enabled: true
   max-placeholders: 12
