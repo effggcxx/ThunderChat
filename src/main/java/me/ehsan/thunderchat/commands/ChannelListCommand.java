@@ -4,8 +4,10 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import me.ehsan.thunderchat.ThunderChat;
 import me.ehsan.thunderchat.channels.GlobalChatManager;
 import me.ehsan.thunderchat.channels.GlobalChatManager.Channel;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -18,6 +20,12 @@ import java.util.Locale;
 
 /** Lists online players who have permission for a specific chat channel. */
 public final class ChannelListCommand implements CommandExecutor {
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final LegacyComponentSerializer LEGACY_AMPERSAND = LegacyComponentSerializer.legacyAmpersand();
+    private static final String PREFIX_TOKEN = "__THUNDERCHAT_PREFIX__";
+    private static final String PLAYER_TOKEN = "__THUNDERCHAT_PLAYER__";
+    private static final String SERVER_TOKEN = "__THUNDERCHAT_SERVER__";
+
     private final ThunderChat plugin;
     private final Channel fixedChannel;
 
@@ -30,35 +38,44 @@ public final class ChannelListCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         Channel channel = resolveChannel(command.getName(), label);
         if (channel == null) {
-            sender.sendMessage(ChatColor.RED + "Unknown list type. Use staff, highrank, admin, or donator.");
+            plugin.getMessagesManager().send(sender, "errors.unknown-list-type",
+                    "<red>Unknown list type. Use staff, highrank, admin, or donator.</red>");
             return true;
         }
+
         if (sender instanceof Player player && !plugin.getGlobalChatManager().canUse(player, channel)) {
-            sender.sendMessage(ChatColor.RED + "You don't have permission to view the " + channel.display().toLowerCase(Locale.ROOT) + " list.");
+            plugin.getMessagesManager().send(sender, "errors.no-list-permission",
+                    "<red>You don't have permission to view the {channel} list.</red>",
+                    java.util.Map.of("channel", channel.display().toLowerCase(Locale.ROOT)));
             return true;
         }
+
         if (args.length > 0) {
             String first = args[0].toLowerCase(Locale.ROOT);
             if (!first.equals("list") && !first.equals("online") && !first.equals("l")) {
-                sender.sendMessage(ChatColor.RED + "Usage: /" + label + " [list]");
+                sender.sendMessage(MINI_MESSAGE.deserialize("<red>Usage: /" + label + " [list]</red>"));
                 return true;
             }
         }
 
         List<Player> online = collectOnlineWithPermission(channel, sender);
         String configKey = "lists." + channel.id();
-        String header = plugin.getPluginConfig().getString(configKey + ".header", "&8&m------&5&m------&d&m------&5&m------&8&m------&f");
-        String format = plugin.getPluginConfig().getString(configKey + ".format", "%luckperms_prefix%%player% &7(&d%server_name%&7) ");
-        String footer = plugin.getPluginConfig().getString(configKey + ".footer", "&8&m------&5&m------&d&m------&5&m------&8&m------&f");
-        String nobody = plugin.getPluginConfig().getString(configKey + ".nobody", " &7There is no " + channel.id() + " &donline&7.");
+        String header = plugin.getPluginConfig().getString(configKey + ".header", "<dark_gray><strikethrough>------</strikethrough></dark_gray>");
+        String format = plugin.getPluginConfig().getString(configKey + ".format", "{prefix}{player} <gray>({server})</gray>");
+        String footer = plugin.getPluginConfig().getString(configKey + ".footer", header);
+        String nobody = plugin.getPluginConfig().getString(configKey + ".nobody",
+                "<gray>There is no " + channel.id() + " <light_purple>online</light_purple>.</gray>");
 
-        sender.sendMessage(colorize(header));
-        if (online.isEmpty()) sender.sendMessage(colorize(nobody));
-        else {
+        sender.sendMessage(MINI_MESSAGE.deserialize(header));
+        if (online.isEmpty()) {
+            sender.sendMessage(MINI_MESSAGE.deserialize(nobody));
+        } else {
             String serverName = plugin.getPluginConfig().getString("network.server-name", "server");
-            for (Player target : online) sender.sendMessage(formatPlayerLine(format, target, serverName));
+            for (Player target : online) {
+                sender.sendMessage(formatPlayerLine(format, target, serverName));
+            }
         }
-        sender.sendMessage(colorize(footer));
+        sender.sendMessage(MINI_MESSAGE.deserialize(footer));
         return true;
     }
 
@@ -87,23 +104,44 @@ public final class ChannelListCommand implements CommandExecutor {
         return result;
     }
 
-    private String formatPlayerLine(String format, Player player, String serverName) {
+    private Component formatPlayerLine(String format, Player player, String serverName) {
         String prefix = resolvePrefix(player);
-        String line = format.replace("%luckpermsprefix%", prefix).replace("%luckperms_prefix%", prefix)
-                .replace("%player%", player.getName()).replace("%server name%", serverName)
-                .replace("%server_name%", serverName).replace("%server%", serverName)
-                .replace("{prefix}", prefix).replace("{player}", player.getName()).replace("{server}", serverName);
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) line = PlaceholderAPI.setPlaceholders(player, line);
-        return ChatColor.translateAlternateColorCodes('&', line);
+        String line = format
+                .replace("{prefix}", PREFIX_TOKEN)
+                .replace("{player}", PLAYER_TOKEN)
+                .replace("{server}", SERVER_TOKEN)
+                .replace("%luckpermsprefix%", PREFIX_TOKEN)
+                .replace("%luckperms_prefix%", PREFIX_TOKEN)
+                .replace("%player%", PLAYER_TOKEN)
+                .replace("%server name%", SERVER_TOKEN)
+                .replace("%server_name%", SERVER_TOKEN)
+                .replace("%server%", SERVER_TOKEN);
+
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            line = PlaceholderAPI.setPlaceholders(player, line);
+        }
+
+        Component component = MINI_MESSAGE.deserialize(line)
+                .replaceText(builder -> builder.matchLiteral(PREFIX_TOKEN).replacement(parsePrefix(prefix)))
+                .replaceText(builder -> builder.matchLiteral(PLAYER_TOKEN).replacement(Component.text(player.getName())))
+                .replaceText(builder -> builder.matchLiteral(SERVER_TOKEN).replacement(Component.text(serverName)));
+        return component;
+    }
+
+    private Component parsePrefix(String prefix) {
+        if (prefix == null || prefix.isEmpty()) return Component.empty();
+        // LuckPerms/PlaceholderAPI prefixes are commonly legacy '&' formatted, while
+        // newer configurations may already provide MiniMessage. Support both without
+        // making the list renderer fall back to legacy output.
+        if (prefix.contains("<") && prefix.contains(">")) {
+            return MINI_MESSAGE.deserialize(prefix);
+        }
+        return LEGACY_AMPERSAND.deserialize(prefix);
     }
 
     private String resolvePrefix(Player player) {
         String template = plugin.getPluginConfig().getString("format.prefix-placeholder", "%luckperms_prefix% ");
         if (template == null || template.isEmpty() || !Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) return "";
         return PlaceholderAPI.setPlaceholders(player, template);
-    }
-
-    private String colorize(String input) {
-        return input == null ? "" : ChatColor.translateAlternateColorCodes('&', input);
     }
 }
