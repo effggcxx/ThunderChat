@@ -19,6 +19,14 @@ public final class ChatColorManager {
     public static final List<String> GRADIENTS = List.of("sunset", "ocean", "forest", "fire", "candy", "aurora", "rainbow");
     public static final List<String> STYLES = List.of("bold", "italic", "underlined", "strikethrough");
     private static final Pattern OBFUSCATED_TAG = Pattern.compile("<\\s*(?:obfuscated|obf)(?:\\s*[:>])", Pattern.CASE_INSENSITIVE);
+    private static final Map<Character, String> LEGACY_TAGS = Map.ofEntries(
+            Map.entry('0', "black"), Map.entry('1', "dark_blue"), Map.entry('2', "dark_green"), Map.entry('3', "dark_aqua"),
+            Map.entry('4', "dark_red"), Map.entry('5', "dark_purple"), Map.entry('6', "gold"), Map.entry('7', "gray"),
+            Map.entry('8', "dark_gray"), Map.entry('9', "blue"), Map.entry('a', "green"), Map.entry('b', "aqua"),
+            Map.entry('c', "red"), Map.entry('d', "light_purple"), Map.entry('e', "yellow"), Map.entry('f', "white"),
+            Map.entry('k', "obfuscated"), Map.entry('l', "bold"), Map.entry('m', "strikethrough"), Map.entry('n', "underlined"),
+            Map.entry('o', "italic"), Map.entry('r', "reset")
+    );
     private final ThunderChat plugin;
     private final Map<UUID, String> colors = new ConcurrentHashMap<>();
     private final Map<UUID, String> gradients = new ConcurrentHashMap<>();
@@ -92,7 +100,7 @@ public final class ChatColorManager {
     public Component colorizeComponent(Player player, String message) {
         if (!canUse(player)) return Component.text(message);
         String custom = getCustomFormat(player);
-        if (custom != null && !custom.isBlank()) return miniMessage.deserialize(custom + miniMessage.escapeTags(message));
+        if (custom != null && !custom.isBlank()) return miniMessage.deserialize(custom + escapeLegacyCodes(message));
 
         String color = getColor(player);
         String gradient = getGradient(player);
@@ -104,13 +112,57 @@ public final class ChatColorManager {
         if (gradient != null) tags.append('<').append(gradientTag(gradient)).append('>');
         else if (color != null && !"white".equalsIgnoreCase(color)) tags.append('<').append(color).append('>');
         for (Style style : selected) tags.append('<').append(styleTag(style)).append('>');
-        if (tags.isEmpty()) return Component.text(message);
+        if (tags.isEmpty()) return deserializeLegacyText(message);
 
         StringBuilder closing = new StringBuilder();
         for (int i = selected.size() - 1; i >= 0; i--) closing.append("</").append(styleTag(selected.get(i))).append('>');
         if (gradient != null) closing.append("rainbow".equals(gradientTag(gradient)) ? "</rainbow>" : "</gradient>");
         else if (color != null && !"white".equalsIgnoreCase(color)) closing.append("</").append(color).append('>');
-        return miniMessage.deserialize(tags + miniMessage.escapeTags(message) + closing);
+        return miniMessage.deserialize(tags + escapeLegacyCodes(message) + closing);
+    }
+
+    /**
+     * Converts Minecraft legacy (&a / §a) color codes to MiniMessage before parsing.
+     * This keeps legacy and MiniMessage formatting consistent instead of letting & codes
+     * appear literally when the MiniMessage parser happens to accept the surrounding text.
+     */
+    private String escapeLegacyCodes(String input) {
+        if (input == null || input.isEmpty()) return "";
+        StringBuilder converted = new StringBuilder(input.length() + 16);
+        for (int i = 0; i < input.length(); i++) {
+            char current = input.charAt(i);
+            if ((current == '&' || current == '§') && i + 1 < input.length()) {
+                char next = input.charAt(i + 1);
+                if ((next == 'x' || next == 'X') && i + 13 < input.length()) {
+                    StringBuilder hex = new StringBuilder(6);
+                    boolean valid = true;
+                    for (int j = 0; j < 6; j++) {
+                        int marker = i + 2 + j * 2;
+                        if (input.charAt(marker) != '&' && input.charAt(marker) != '§') { valid = false; break; }
+                        char digit = input.charAt(marker + 1);
+                        if (Character.digit(digit, 16) < 0) { valid = false; break; }
+                        hex.append(digit);
+                    }
+                    if (valid) {
+                        converted.append("<#").append(hex).append('>');
+                        i += 13;
+                        continue;
+                    }
+                }
+                String tag = LEGACY_TAGS.get(Character.toLowerCase(next));
+                if (tag != null) {
+                    converted.append('<').append(tag).append('>');
+                    i++;
+                    continue;
+                }
+            }
+            converted.append(current);
+        }
+        return miniMessage.escapeTags(converted.toString());
+    }
+
+    private Component deserializeLegacyText(String message) {
+        return miniMessage.deserialize(escapeLegacyCodes(message));
     }
 
     private String styleTag(Style style) { return switch (style) { case BOLD -> "bold"; case ITALIC -> "italic"; case UNDERLINED -> "underlined"; case STRIKETHROUGH -> "strikethrough"; }; }
