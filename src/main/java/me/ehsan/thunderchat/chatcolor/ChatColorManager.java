@@ -98,7 +98,7 @@ public final class ChatColorManager {
 
     /** Applies the player's configured formatting without leaving the Adventure API. */
     public Component colorizeComponent(Player player, String message) {
-        if (!canUse(player)) return Component.text(message);
+        if (!canUse(player)) return deserializeLegacyText(message);
         String custom = getCustomFormat(player);
         if (custom != null && !custom.isBlank()) return miniMessage.deserialize(custom + escapeLegacyCodes(message));
 
@@ -121,25 +121,22 @@ public final class ChatColorManager {
         return miniMessage.deserialize(tags + escapeLegacyCodes(message) + closing);
     }
 
-    /**
-     * Converts Minecraft legacy (&a / §a) color codes to MiniMessage before parsing.
-     * This keeps legacy and MiniMessage formatting consistent instead of letting & codes
-     * appear literally when the MiniMessage parser happens to accept the surrounding text.
-     */
+    /** Converts Minecraft legacy (&a / §a) color codes to MiniMessage while escaping normal MiniMessage syntax. */
     private String escapeLegacyCodes(String input) {
         if (input == null || input.isEmpty()) return "";
-        StringBuilder converted = new StringBuilder(input.length() + 16);
-        for (int i = 0; i < input.length(); i++) {
-            char current = input.charAt(i);
-            if ((current == '&' || current == '§') && i + 1 < input.length()) {
-                char next = input.charAt(i + 1);
-                if ((next == 'x' || next == 'X') && i + 13 < input.length()) {
+        String source = miniMessage.escapeTags(input);
+        StringBuilder converted = new StringBuilder(source.length() + 16);
+        for (int i = 0; i < source.length(); i++) {
+            char current = source.charAt(i);
+            if ((current == '&' || current == '§') && i + 1 < source.length()) {
+                char next = source.charAt(i + 1);
+                if ((next == 'x' || next == 'X') && i + 13 < source.length()) {
                     StringBuilder hex = new StringBuilder(6);
                     boolean valid = true;
                     for (int j = 0; j < 6; j++) {
                         int marker = i + 2 + j * 2;
-                        if (input.charAt(marker) != '&' && input.charAt(marker) != '§') { valid = false; break; }
-                        char digit = input.charAt(marker + 1);
+                        if (source.charAt(marker) != '&' && source.charAt(marker) != '§') { valid = false; break; }
+                        char digit = source.charAt(marker + 1);
                         if (Character.digit(digit, 16) < 0) { valid = false; break; }
                         hex.append(digit);
                     }
@@ -158,7 +155,7 @@ public final class ChatColorManager {
             }
             converted.append(current);
         }
-        return miniMessage.escapeTags(converted.toString());
+        return converted.toString();
     }
 
     private Component deserializeLegacyText(String message) {
